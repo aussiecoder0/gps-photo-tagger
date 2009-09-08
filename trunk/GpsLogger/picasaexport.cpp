@@ -116,9 +116,15 @@ void PicasaExport::PicasaParser::on_characters ( const Glib::ustring& text ) {
     }
 }
 
-void* PicasaExport::entryPoint ( void *pointer ) {
+void* PicasaExport::entryPoint1 ( void *pointer ) {
     PicasaExport *picasaExport = ( PicasaExport* ) pointer;
-    picasaExport->start();
+    picasaExport->start1();
+    return NULL;
+}
+
+void* PicasaExport::entryPoint2 ( void *pointer ) {
+    PicasaExport *picasaExport = ( PicasaExport* ) pointer;
+    picasaExport->start2();
     return NULL;
 }
 
@@ -220,14 +226,17 @@ void PicasaExport::upload ( bool success, bool existing, string album, bool titl
         this->titles = titles;
         this->dimension = dimension;
         this->setupWindow = setupWindow;
-        pthread_create ( &thread, NULL, entryPoint, ( void* ) this );
+        queueDone = false;
+        pthread_mutex_init ( &mutex, NULL );
+        pthread_create ( &thread1, NULL, entryPoint1, ( void* ) this );
+        pthread_create ( &thread2, NULL, entryPoint2, ( void* ) this );
     } else {
         delete ( setupWindow );
         ready = true;
     }
 }
 
-void PicasaExport::start() {
+void PicasaExport::start1() {
     list<PhotoItem>::iterator i;
     for ( i = photoList.begin(); i != photoList.end(); ++i ) {
         PhotoItem photoItem = *i;
@@ -262,24 +271,24 @@ void PicasaExport::start() {
             picture.flop();
             break;
         case 3:
-            picture.rotate ( 180.0 );
+            picture.rotate ( 180 );
             break;
         case 4:
             picture.flip();
             break;
         case 5:
-            picture.rotate ( 90.0 );
+            picture.rotate ( 90 );
             picture.flip();
             break;
         case 6:
-            picture.rotate ( 90.0 );
+            picture.rotate ( 90 );
             break;
         case 7:
-            picture.rotate ( 270.0 );
+            picture.rotate ( 270 );
             picture.flip();
             break;
         case 8:
-            picture.rotate ( 270.0 );
+            picture.rotate ( 270 );
             break;
         default:
             break;
@@ -329,14 +338,44 @@ void PicasaExport::start() {
         temp = request + position;
         memcpy ( temp, foot.c_str(), length );
         position += length;
-        httpClient.headersClear();
-        httpClient.headersAdd ( "GData-Version: 2" );
-        httpClient.headersAdd ( "Authorization: GoogleLogin auth=" + auth );
-        httpClient.headersAdd ( "Content-Type: multipart/related; boundary=\"END_OF_PART\"" );
-        httpClient.headersAdd ( "Content-Length: " + itos ( position ) );
-        string response = httpClient.httpPost ( uploadLink, request, position );
-        free ( request );
-        progress();
+        UploadData item;
+        item.link = uploadLink;
+        item.data = request;
+        item.size = position;
+        pthread_mutex_lock ( &mutex );
+        uploadQueue.push ( item );
+        pthread_mutex_unlock ( &mutex );
+    }
+    pthread_mutex_lock ( &mutex );
+    queueDone = true;
+    pthread_mutex_unlock ( &mutex );
+}
+
+void PicasaExport::start2() {
+    bool run = true;
+    while ( run ) {
+        pthread_mutex_lock ( &mutex );
+        bool empty = uploadQueue.empty();
+        if ( empty && queueDone ) {
+            run = false;
+        }
+        pthread_mutex_unlock ( &mutex );
+        if ( empty == false ) {
+            pthread_mutex_lock ( &mutex );
+            UploadData item = uploadQueue.front();
+            uploadQueue.pop();
+            pthread_mutex_unlock ( &mutex );
+            httpClient.headersClear();
+            httpClient.headersAdd ( "GData-Version: 2" );
+            httpClient.headersAdd ( "Authorization: GoogleLogin auth=" + auth );
+            httpClient.headersAdd ( "Content-Type: multipart/related; boundary=\"END_OF_PART\"" );
+            httpClient.headersAdd ( "Content-Length: " + itos ( item.size ) );
+            string response = httpClient.httpPost ( item.link, item.data, item.size );
+            free ( item.data );
+            progress();
+        } else {
+            sleep ( 1 );
+        }
     }
     done();
 }

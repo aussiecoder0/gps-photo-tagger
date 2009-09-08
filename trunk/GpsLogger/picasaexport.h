@@ -24,6 +24,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <queue>
 #include <exif.hpp>
 #include <gtkmm.h>
 #include <image.hpp>
@@ -61,8 +62,14 @@ private:
         virtual void on_end_element ( const Glib::ustring& name );
         virtual void on_characters ( const Glib::ustring& characters );
     };
+    struct UploadData {
+        string link;
+        char *data;
+        int size;
+    };
     // Static entrypoints
-    static void* entryPoint ( void* );
+    static void* entryPoint1 ( void* );
+    static void* entryPoint2 ( void* );
     // Variables & Objects
     bool ready;
     list<PhotoItem> photoList;
@@ -73,13 +80,18 @@ private:
     bool titles;
     int dimension;
     SetupWindow *setupWindow;
-    pthread_t thread;
+    pthread_t thread1;
+    pthread_t thread2;
+    pthread_mutex_t mutex;
+    bool queueDone;
+    queue<UploadData> uploadQueue;
     // Functions
     void authorize ( bool, string, string, LoginWindow* );
     string extractAuth ( string );
     void listAlbums();
     void upload ( bool, bool, string, bool, int, SetupWindow* );
-    void start();
+    void start1();
+    void start2();
     // Dispatchers
     Glib::Dispatcher progress;
     Glib::Dispatcher done;
