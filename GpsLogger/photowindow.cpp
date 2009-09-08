@@ -34,8 +34,8 @@ PhotoArea::PhotoArea ( const char *path ) {
     image = Cairo::ImageSurface::create ( Cairo::FORMAT_RGB24, 200, 150 );
     Cairo::RefPtr<Cairo::Context> context = Cairo::Context::create ( image );
     context->scale ( scale, scale );
-    int left = ( 200.0 / scale - width ) / 2;
-    int top = ( 150.0 / scale - height ) / 2;
+    int left = ( 200 / scale - width ) / 2;
+    int top = ( 150 / scale - height ) / 2;
     Gdk::Cairo::set_source_pixbuf ( context, pixbuf, left, top );
     context->paint();
 }
