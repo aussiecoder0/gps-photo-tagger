@@ -60,7 +60,7 @@ public:
     // Action calls
     void doIncrease();
     // Signals
-    sigc::signal<void, bool, bool, string, bool, SetupWindow*> signalDone();
+    sigc::signal<void, bool, bool, string, bool, int, SetupWindow*> signalDone();
 private:
     // Structs & Classes
     class AlbumModelColumns : public Gtk::TreeModel::ColumnRecord {
@@ -87,13 +87,16 @@ private:
     Gtk::RadioButton radio3, radio4;
     Gtk::Frame frame3;
     Gtk::Table table3;
+    Gtk::RadioButton radio5, radio6, radio7, radio8;
+    Gtk::Frame frame4;
+    Gtk::Table table4;
     Gtk::ProgressBar progressBar;
     Gtk::Button button1, button2;
     // Widget signals
     void onButtonOk();
     void onButtonStorno();
     // Signals
-    sigc::signal<void, bool, bool, string, bool, SetupWindow*> done;
+    sigc::signal<void, bool, bool, string, bool, int, SetupWindow*> done;
 };
 
 #endif /*PICASAWINDOWS_H_*/

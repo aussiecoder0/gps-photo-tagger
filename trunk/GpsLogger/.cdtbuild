@@ -13,14 +13,14 @@
 <listOptionValue builtIn="false" value="/usr/include/curl"/>
 <listOptionValue builtIn="false" value="/usr/include/libxml++-2.6"/>
 </option>
-<option id="gnu.cpp.compiler.option.other.other.1407330386" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 `pkg-config --cflags gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --cflags`" valueType="string"/>
+<option id="gnu.cpp.compiler.option.other.other.1407330386" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 `pkg-config --cflags gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --cflags` `Magick++-config --cppflags`" valueType="string"/>
 <option id="gnu.cpp.compiler.option.warnings.allwarn.1397743220" superClass="gnu.cpp.compiler.option.warnings.allwarn" value="true" valueType="boolean"/>
 <option id="gnu.cpp.compiler.option.warnings.pedantic.1304065850" superClass="gnu.cpp.compiler.option.warnings.pedantic" value="false" valueType="boolean"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.1736780897" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug"/>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.938665293" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
 <tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.161630185" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
-<option id="gnu.cpp.link.option.flags.641096095" superClass="gnu.cpp.link.option.flags" value="`pkg-config --libs gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --libs`" valueType="string"/>
+<option id="gnu.cpp.link.option.flags.641096095" superClass="gnu.cpp.link.option.flags" value="`pkg-config --libs gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --libs` `Magick++-config --libs`" valueType="string"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.491997714" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug"/>
 <macros/>
