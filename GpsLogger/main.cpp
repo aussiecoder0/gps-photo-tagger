@@ -20,12 +20,14 @@
 */
 
 #include <gtkmm.h>
+#include <Magick++.h>
 #include "mainwindow.h"
 
 using namespace std;
 
 int main ( int argc, char** argv ) {
     Gtk::Main main ( &argc, &argv );
+    Magick::InitializeMagick ( *argv );
     MainWindow *mainWindow = new MainWindow;
     Gtk::Main::run ( *mainWindow );
     delete ( mainWindow );

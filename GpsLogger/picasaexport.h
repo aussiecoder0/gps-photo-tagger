@@ -24,8 +24,11 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <exif.hpp>
 #include <gtkmm.h>
+#include <image.hpp>
 #include <libxml++/libxml++.h>
+#include <Magick++.h>
 #include "functions.h"
 #include "httpclient.h"
 #include "photowidget.h"
@@ -68,13 +71,14 @@ private:
     string auth;
     string uploadLink;
     bool titles;
+    int dimension;
     SetupWindow *setupWindow;
     pthread_t thread;
     // Functions
     void authorize ( bool, string, string, LoginWindow* );
     string extractAuth ( string );
     void listAlbums();
-    void upload ( bool, bool, string, bool, SetupWindow* );
+    void upload ( bool, bool, string, bool, int, SetupWindow* );
     void start();
     // Dispatchers
     Glib::Dispatcher progress;

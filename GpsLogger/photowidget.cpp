@@ -132,7 +132,6 @@ void PhotoWidget::addPhoto ( const char* fileName ) {
             free ( timeinfo );
         }
     }
-
     int index = 0;
     bool found = false;
     list<CameraTime>::iterator i;

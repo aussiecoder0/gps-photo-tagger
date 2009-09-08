@@ -190,7 +190,7 @@ void PicasaExport::listAlbums() {
     setupWindow->signalDone().connect ( sigc::mem_fun ( *this, &PicasaExport::upload ) );
 }
 
-void PicasaExport::upload ( bool success, bool existing, string album, bool titles, SetupWindow *setupWindow ) {
+void PicasaExport::upload ( bool success, bool existing, string album, bool titles, int dimension, SetupWindow *setupWindow ) {
     if ( success ) {
         if ( existing == false ) {
             time_t timeNow = time ( NULL );
@@ -218,6 +218,7 @@ void PicasaExport::upload ( bool success, bool existing, string album, bool titl
             uploadLink = album;
         }
         this->titles = titles;
+        this->dimension = dimension;
         this->setupWindow = setupWindow;
         pthread_create ( &thread, NULL, entryPoint, ( void* ) this );
     } else {
@@ -235,6 +236,57 @@ void PicasaExport::start() {
         if ( titles ) {
             title = fileName;
         }
+        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( photoItem.path );
+        image->readMetadata();
+        Exiv2::ExifData &exifData = image->exifData();
+        int orient = -1;
+        try {
+            orient = exifData["Exif.Image.Orientation"].toLong();
+        } catch ( Exiv2::Error& ) {}
+        Magick::Image picture;
+        picture.read ( photoItem.path );
+        if ( dimension > 0 ) {
+            int width = picture.baseColumns();
+            int height = picture.baseRows();
+            if ( width > height ) {
+                height = dimension * height / width;
+                width = dimension;
+            } else {
+                width = dimension * width / height;
+                height = dimension;
+            }
+            picture.zoom ( itos ( width ) + "x" + itos ( height ) );
+        }
+        switch ( orient ) {
+        case 2:
+            picture.flop();
+            break;
+        case 3:
+            picture.rotate ( 180.0 );
+            break;
+        case 4:
+            picture.flip();
+            break;
+        case 5:
+            picture.rotate ( 90.0 );
+            picture.flip();
+            break;
+        case 6:
+            picture.rotate ( 90.0 );
+            break;
+        case 7:
+            picture.rotate ( 270.0 );
+            picture.flip();
+            break;
+        case 8:
+            picture.rotate ( 270.0 );
+            break;
+        default:
+            break;
+        }
+        picture.magick ( "JPEG" );
+        Magick::Blob blob;
+        picture.write ( &blob );
         int length = 0;
         char *request = NULL;
         int position = 0;
@@ -264,19 +316,11 @@ void PicasaExport::start() {
         request = ( char* ) malloc ( length );
         memcpy ( request, meta.c_str(), length );
         position += length;
-        char buffer[1024];
-        FILE *file = fopen ( photoItem.path.c_str(), "r" );
-        while ( true ) {
-            length = fread ( buffer, 1, 1024, file );
-            if ( length == 0 ) {
-                break;
-            }
-            request = ( char* ) realloc ( request, position + length );
-            temp = request + position;
-            memcpy ( temp, buffer, length );
-            position += length;
-        }
-        fclose ( file );
+        length = blob.length();
+        request = ( char* ) realloc ( request, position + length );
+        temp = request + position;
+        memcpy ( temp, blob.data(), length );
+        position += length;
         string foot;
         foot += "\r\n"
                 "--END_OF_PART--";
