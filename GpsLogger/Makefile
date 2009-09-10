@@ -7,7 +7,7 @@ format:
 all: gpslogger
 
 gpslogger: connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settingswindow.o timewindow.o
-	g++ -o"gpslogger" `pkg-config --libs gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --libs` connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settingswindow.o timewindow.o
+	g++ -o"gpslogger" `pkg-config --libs gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --libs` `Magick++-config --libs` connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settingswindow.o timewindow.o
 
 connector.o: connector.cpp
 	g++ -I"/usr/include/exiv2" -I"/usr/include/curl" -O3 -c `pkg-config --cflags gtkmm-2.4 libxml++-2.6` connector.cpp
