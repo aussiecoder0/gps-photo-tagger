@@ -90,7 +90,7 @@ private:
     };
     // Variables & Objects
     LogEntry* first;
-    int lastId;
+    int lastId, selectedId;
     PhotoModelColumns modelColumns;
     Glib::RefPtr<Gtk::ListStore> listStore;
     list<CameraTime> cameras;
@@ -99,6 +99,11 @@ private:
     void locatePhoto ( Gtk::TreeModel::Row );
     // Widgets
     Gtk::TreeView treeView;
+    Gtk::Menu menu;
+    // Widget signals
+    void onButtonPress ( GdkEventButton* );
+    void onMenuShow();
+    void onMenuDelete();
     // Windows
     PhotoWindow photoWindow;
     TimeWindow timeWindow;
