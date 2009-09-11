@@ -28,6 +28,7 @@ PhotoWidget::PhotoWidget() {
     // Variables & Objects
     first = NULL;
     lastId = -1;
+    selectedId = -1;
     listStore = Gtk::ListStore::create ( modelColumns );
     // Widgets
     treeView.set_model ( listStore );
@@ -37,7 +38,12 @@ PhotoWidget::PhotoWidget() {
     treeView.append_column ( "Latitude", modelColumns.latStr );
     treeView.append_column ( "Longitude", modelColumns.lonStr );
     treeView.append_column ( "Path", modelColumns.path );
+    treeView.signal_button_press_event().connect_notify ( sigc::mem_fun ( *this, &PhotoWidget::onButtonPress ) );
     add ( treeView );
+    Gtk::Menu::MenuList& menuList = menu.items();
+    menuList.push_back ( Gtk::Menu_Helpers::MenuElem ( "Show", sigc::mem_fun ( *this, &PhotoWidget::onMenuShow ) ) );
+    menuList.push_back ( Gtk::Menu_Helpers::MenuElem ( "Delete", sigc::mem_fun ( *this, &PhotoWidget::onMenuDelete ) ) );
+    menu.accelerate ( *this );
     // Windows
     timeWindow.signalDone().connect ( sigc::mem_fun ( *this, &PhotoWidget::onEditDone ) );
 }
@@ -78,6 +84,7 @@ list<PhotoItem> PhotoWidget::getPhotos() {
 
 void PhotoWidget::clearPhotos() {
     lastId = -1;
+    selectedId = -1;
     typedef Gtk::TreeModel::Children Children;
     Children children = listStore->children();
     for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
@@ -89,6 +96,7 @@ void PhotoWidget::clearPhotos() {
         }
     }
     listStore->clear();
+    cameras.clear();
     change();
 }
 
@@ -270,6 +278,60 @@ void PhotoWidget::locatePhoto ( Gtk::TreeModel::Row row ) {
             } else {
                 next = next->nextDay;
             }
+        }
+    }
+}
+
+void PhotoWidget::onButtonPress ( GdkEventButton *event ) {
+    Glib::RefPtr<Gtk::TreeView::Selection> selection = treeView.get_selection();
+    if ( selection ) {
+        Gtk::TreeModel::iterator iter = selection->get_selected();
+        if ( iter ) {
+            Gtk::TreeModel::Row row = *iter;
+            selectedId = row[modelColumns.id];
+            int button = event->button;
+            if ( ( button == 1 ) && ( event->type == GDK_2BUTTON_PRESS ) ) {
+                onMenuShow();
+            }
+            if ( button == 3 ) {
+                menu.popup ( event->button, event->time );
+            }
+        } else {
+            selectedId = -1;
+        }
+    } else {
+        selectedId = -1;
+    }
+}
+
+void PhotoWidget::onMenuShow() {
+    photoWindow.clearPhotos();
+    typedef Gtk::TreeModel::Children Children;
+    Children children = listStore->children();
+    for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
+        Gtk::TreeModel::Row row = *iter;
+        if ( row[modelColumns.id] == selectedId ) {
+            string info = itos ( row[modelColumns.id] ) + "\n";
+            info += row[modelColumns.dateStr] + "\n";
+            info += row[modelColumns.timeStr] + "\n";
+            info += row[modelColumns.latStr] + "\n";
+            info += row[modelColumns.lonStr] + "\n";
+            Glib::ustring path = row[modelColumns.path];
+            photoWindow.addPhoto ( info, path.c_str() );
+            break;
+        }
+    }
+    photoWindow.doShow();
+}
+
+void PhotoWidget::onMenuDelete() {
+    typedef Gtk::TreeModel::Children Children;
+    Children children = listStore->children();
+    for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
+        Gtk::TreeModel::Row row = *iter;
+        if ( row[modelColumns.id] == selectedId ) {
+            listStore->erase ( row );
+            break;
         }
     }
 }
