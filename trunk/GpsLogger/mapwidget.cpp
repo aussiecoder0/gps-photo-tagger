@@ -136,8 +136,11 @@ void MapWidget::updateView() {
             }
             next = next->nextVisible;
         }
-        vScrollBar.set_range ( minLat, maxLat );
-        hScrollBar.set_range ( minLon, maxLon );
+        this->minLat = minLat;
+        this->maxLat = maxLat;
+        this->minLon = minLon;
+        this->maxLon = maxLon;
+        updateScrollBars();
         double latitude = ( minLat + maxLat ) / 2;
         double longitude = ( minLon + maxLon ) / 2;
         vScrollBar.set_value ( latitude );
@@ -150,6 +153,19 @@ void MapWidget::updateView() {
             scale.set_value ( pow ( zoom2, 0.5 ) );
         }
     }
+}
+
+void MapWidget::updateScrollBars() {
+    Gtk::Adjustment *adjustment;
+    double pagesize;
+    adjustment = vScrollBar.get_adjustment();
+    pagesize = ( double ) height / zoom;
+    adjustment->set_page_size ( pagesize );
+    vScrollBar.set_range ( minLat, maxLat + pagesize );
+    adjustment = hScrollBar.get_adjustment();
+    pagesize = ( double ) width / zoom;
+    adjustment->set_page_size ( pagesize );
+    hScrollBar.set_range ( minLon, maxLon + pagesize );
 }
 
 void MapWidget::drawLatLine ( int deg, double min, Cairo::RefPtr<Cairo::Context> context ) {
@@ -263,6 +279,7 @@ void MapWidget::drawClickables ( Cairo::RefPtr<Cairo::Context> context ) {
 
 void MapWidget::onZoomChange() {
     zoom = pow ( scale.get_value(), 2 );
+    updateScrollBars();
     mapArea.queue_draw();
 }
 
