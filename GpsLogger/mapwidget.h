@@ -64,6 +64,8 @@ private:
     int width, height;
     int zoom;
     double latitude, longitude;
+    double minLat, maxLat;
+    double minLon, maxLon;
     bool lastOut;
     double lastLat, lastLon;
     Clickable *firstClickable;
@@ -72,6 +74,7 @@ private:
     double downLat, downLon;
     // Functions
     void updateView();
+    void updateScrollBars();
     void drawLatLine ( int, double, Cairo::RefPtr<Cairo::Context> );
     void drawLonLine ( int, double, Cairo::RefPtr<Cairo::Context> );
     void drawPoint ( double, double, Cairo::RefPtr<Cairo::Context> );
