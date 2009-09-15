@@ -24,10 +24,9 @@
 
 #include <gtkmm.h>
 #include "connector.h"
+#include "functions.h"
 
 using namespace std;
-
-
 
 class DayView : public Gtk::TreeView {
 public:

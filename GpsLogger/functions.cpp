@@ -77,3 +77,11 @@ string extractFileName ( string path ) {
     }
     return rest;
 }
+
+void errorMsg ( string message ) {
+    time_t clock = time ( NULL );
+    struct tm *timeinfo = localtime ( &clock );
+    char buffer [9];
+    strftime ( buffer, 9, "%H:%M:%S", timeinfo );
+    cerr << buffer << " " << message << endl;
+}
