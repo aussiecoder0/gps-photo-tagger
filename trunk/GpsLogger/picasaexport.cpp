@@ -245,106 +245,116 @@ void PicasaExport::start1() {
         if ( titles ) {
             title = fileName;
         }
-        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( photoItem.path );
-        image->readMetadata();
-        Exiv2::ExifData &exifData = image->exifData();
         int orient = -1;
         try {
+            Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( photoItem.path );
+            image->readMetadata();
+            Exiv2::ExifData &exifData = image->exifData();
             orient = exifData["Exif.Image.Orientation"].toLong();
-        } catch ( Exiv2::Error& ) {}
+        } catch ( Exiv2::Error& ) {
+            string message = "Can't determine orientation of ";
+            message += photoItem.path;
+            errorMsg ( message );
+        }
         Magick::Image picture;
-        picture.read ( photoItem.path );
-        if ( dimension > 0 ) {
-            int width = picture.baseColumns();
-            int height = picture.baseRows();
-            if ( width > height ) {
-                height = dimension * height / width;
-                width = dimension;
-            } else {
-                width = dimension * width / height;
-                height = dimension;
+        try {
+            picture.read ( photoItem.path );
+            if ( dimension > 0 ) {
+                int width = picture.baseColumns();
+                int height = picture.baseRows();
+                if ( width > height ) {
+                    height = dimension * height / width;
+                    width = dimension;
+                } else {
+                    width = dimension * width / height;
+                    height = dimension;
+                }
+                picture.zoom ( itos ( width ) + "x" + itos ( height ) );
             }
-            picture.zoom ( itos ( width ) + "x" + itos ( height ) );
+            switch ( orient ) {
+            case 2:
+                picture.flop();
+                break;
+            case 3:
+                picture.rotate ( 180 );
+                break;
+            case 4:
+                picture.flip();
+                break;
+            case 5:
+                picture.rotate ( 90 );
+                picture.flip();
+                break;
+            case 6:
+                picture.rotate ( 90 );
+                break;
+            case 7:
+                picture.rotate ( 270 );
+                picture.flip();
+                break;
+            case 8:
+                picture.rotate ( 270 );
+                break;
+            default:
+                break;
+            }
+            picture.magick ( "JPEG" );
+            Magick::Blob blob;
+            picture.write ( &blob );
+            int length = 0;
+            char *request = NULL;
+            int position = 0;
+            char *temp = NULL;
+            string meta;
+            meta += "Media multipart posting\r\n"
+                    "--END_OF_PART\r\n"
+                    "Content-Type: application/atom+xml\r\n"
+                    "\r\n";
+            meta += "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:georss='http://www.georss.org/georss' xmlns:gml='http://www.opengis.net/gml'>"
+                    "<title>" + fileName + "</title>"
+                    "<summary>" + title + "</summary>"
+                    "<category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/photos/2007#photo'/>";
+            if ( photoItem.hasPos ) {
+                meta += "<georss:where>"
+                        "<gml:Point>"
+                        "<gml:pos>" + dtos ( photoItem.latitude ) + " " + dtos ( photoItem.longitude ) + "</gml:pos>"
+                        "</gml:Point>"
+                        "</georss:where>";
+            }
+            meta += "</entry>";
+            meta += "\r\n"
+                    "--END_OF_PART\r\n"
+                    "Content-Type: image/jpeg\r\n"
+                    "\r\n";
+            length = meta.length();
+            request = ( char* ) malloc ( length );
+            memcpy ( request, meta.c_str(), length );
+            position += length;
+            length = blob.length();
+            request = ( char* ) realloc ( request, position + length );
+            temp = request + position;
+            memcpy ( temp, blob.data(), length );
+            position += length;
+            string foot;
+            foot += "\r\n"
+                    "--END_OF_PART--";
+            length = foot.length();
+            request = ( char* ) realloc ( request, position + length );
+            temp = request + position;
+            memcpy ( temp, foot.c_str(), length );
+            position += length;
+            UploadData item;
+            item.link = uploadLink;
+            item.data = request;
+            item.size = position;
+            pthread_mutex_lock ( &mutex );
+            uploadQueue.push ( item );
+            pthread_mutex_unlock ( &mutex );
+        } catch ( Magick::Error& ) {
+            string message = "Can't process image ";
+            message += photoItem.path;
+            errorMsg ( message );
         }
-        switch ( orient ) {
-        case 2:
-            picture.flop();
-            break;
-        case 3:
-            picture.rotate ( 180 );
-            break;
-        case 4:
-            picture.flip();
-            break;
-        case 5:
-            picture.rotate ( 90 );
-            picture.flip();
-            break;
-        case 6:
-            picture.rotate ( 90 );
-            break;
-        case 7:
-            picture.rotate ( 270 );
-            picture.flip();
-            break;
-        case 8:
-            picture.rotate ( 270 );
-            break;
-        default:
-            break;
-        }
-        picture.magick ( "JPEG" );
-        Magick::Blob blob;
-        picture.write ( &blob );
-        int length = 0;
-        char *request = NULL;
-        int position = 0;
-        char *temp = NULL;
-        string meta;
-        meta += "Media multipart posting\r\n"
-                "--END_OF_PART\r\n"
-                "Content-Type: application/atom+xml\r\n"
-                "\r\n";
-        meta += "<entry xmlns='http://www.w3.org/2005/Atom' xmlns:georss='http://www.georss.org/georss' xmlns:gml='http://www.opengis.net/gml'>"
-                "<title>" + fileName + "</title>"
-                "<summary>" + title + "</summary>"
-                "<category scheme='http://schemas.google.com/g/2005#kind' term='http://schemas.google.com/photos/2007#photo'/>";
-        if ( photoItem.hasPos ) {
-            meta += "<georss:where>"
-                    "<gml:Point>"
-                    "<gml:pos>" + dtos ( photoItem.latitude ) + " " + dtos ( photoItem.longitude ) + "</gml:pos>"
-                    "</gml:Point>"
-                    "</georss:where>";
-        }
-        meta += "</entry>";
-        meta += "\r\n"
-                "--END_OF_PART\r\n"
-                "Content-Type: image/jpeg\r\n"
-                "\r\n";
-        length = meta.length();
-        request = ( char* ) malloc ( length );
-        memcpy ( request, meta.c_str(), length );
-        position += length;
-        length = blob.length();
-        request = ( char* ) realloc ( request, position + length );
-        temp = request + position;
-        memcpy ( temp, blob.data(), length );
-        position += length;
-        string foot;
-        foot += "\r\n"
-                "--END_OF_PART--";
-        length = foot.length();
-        request = ( char* ) realloc ( request, position + length );
-        temp = request + position;
-        memcpy ( temp, foot.c_str(), length );
-        position += length;
-        UploadData item;
-        item.link = uploadLink;
-        item.data = request;
-        item.size = position;
-        pthread_mutex_lock ( &mutex );
-        uploadQueue.push ( item );
-        pthread_mutex_unlock ( &mutex );
     }
     pthread_mutex_lock ( &mutex );
     queueDone = true;

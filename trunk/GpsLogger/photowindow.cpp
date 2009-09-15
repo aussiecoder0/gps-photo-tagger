@@ -23,20 +23,26 @@
 
 PhotoArea::PhotoArea ( const char *path ) {
     // Variables & Objects
-    Glib::RefPtr<Gdk::Pixbuf> pixbuf = Gdk::Pixbuf::create_from_file ( path );
-    int width = pixbuf->get_width();
-    int height = pixbuf->get_height();
-    double scale = ( double ) 200 / width;
-    double scale2 = ( double ) 150 / height;
-    if ( scale2 < scale ) {
-        scale = scale2;
-    }
     image = Cairo::ImageSurface::create ( Cairo::FORMAT_RGB24, 200, 150 );
     Cairo::RefPtr<Cairo::Context> context = Cairo::Context::create ( image );
-    context->scale ( scale, scale );
-    int left = ( 200 / scale - width ) / 2;
-    int top = ( 150 / scale - height ) / 2;
-    Gdk::Cairo::set_source_pixbuf ( context, pixbuf, left, top );
+    try {
+        Glib::RefPtr<Gdk::Pixbuf> pixbuf = Gdk::Pixbuf::create_from_file ( path );
+        int width = pixbuf->get_width();
+        int height = pixbuf->get_height();
+        double scale = ( double ) 200 / width;
+        double scale2 = ( double ) 150 / height;
+        if ( scale2 < scale ) {
+            scale = scale2;
+        }
+        context->scale ( scale, scale );
+        int left = ( 200 / scale - width ) / 2;
+        int top = ( 150 / scale - height ) / 2;
+        Gdk::Cairo::set_source_pixbuf ( context, pixbuf, left, top );
+    } catch ( Glib::Error& ) {
+        string message = "Can't load image ";
+        message += path;
+        errorMsg ( message );
+    }
     context->paint();
 }
 

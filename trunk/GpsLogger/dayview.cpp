@@ -59,63 +59,75 @@ void DayView::append ( LogEntry* first ) {
 
 void DayView::save ( const char *fileName ) {
     FILE *file = fopen ( fileName, "w" );
-    char *buffer;
-    LogEntry* next = first;
-    while ( next != NULL ) {
-        buffer = ( char* ) & next->time;
-        fwrite ( buffer, 1, 4, file );
-        buffer = ( char* ) & next->speed;
-        fwrite ( buffer, 1, 4, file );
-        buffer = ( char* ) & next->latitude;
-        fwrite ( buffer, 1, 8, file );
-        buffer = ( char* ) & next->longitude;
-        fwrite ( buffer, 1, 8, file );
-        buffer = ( char* ) & next->height;
-        fwrite ( buffer, 1, 8, file );
-        next = next->next;
+    if ( file ) {
+        char *buffer;
+        LogEntry* next = first;
+        while ( next != NULL ) {
+            buffer = ( char* ) & next->time;
+            fwrite ( buffer, 1, 4, file );
+            buffer = ( char* ) & next->speed;
+            fwrite ( buffer, 1, 4, file );
+            buffer = ( char* ) & next->latitude;
+            fwrite ( buffer, 1, 8, file );
+            buffer = ( char* ) & next->longitude;
+            fwrite ( buffer, 1, 8, file );
+            buffer = ( char* ) & next->height;
+            fwrite ( buffer, 1, 8, file );
+            next = next->next;
+        }
+        fclose ( file );
+    } else {
+        string message = "Can't save file ";
+        message += fileName;
+        errorMsg ( message );
     }
-    fclose ( file );
 }
 
 LogEntry* DayView::load ( const char *fileName ) {
     clear();
     FILE *file = fopen ( fileName, "r" );
-    char buffer[8];
-    long *type1 = ( long* ) & buffer;
-    int *type2 = ( int* ) & buffer;
-    double *type3 = ( double* ) & buffer;
-    LogEntry *next;
-    LogEntry *last = NULL;
-    while ( true ) {
-        int size = fread ( buffer, 1, 4, file );
-        if ( size == 0 ) {
-            break;
+    if ( file ) {
+        char buffer[8];
+        long *type1 = ( long* ) & buffer;
+        int *type2 = ( int* ) & buffer;
+        double *type3 = ( double* ) & buffer;
+        LogEntry *next;
+        LogEntry *last = NULL;
+        while ( true ) {
+            int size = fread ( buffer, 1, 4, file );
+            if ( size == 0 ) {
+                break;
+            }
+            next = new LogEntry();
+            next->time = *type1;
+            fread ( buffer, 1, 4, file );
+            next->speed = *type2;
+            fread ( buffer, 1, 8, file );
+            next->latitude = *type3;
+            fread ( buffer, 1, 8, file );
+            next->longitude = *type3;
+            fread ( buffer, 1, 8, file );
+            next->height = *type3;
+            next->photo = -1;
+            next->next = NULL;
+            next->nextDay = NULL;
+            next->nextVisible = NULL;
+            if ( last == NULL ) {
+                first = next;
+            } else {
+                last->next = next;
+                last->nextVisible = next;
+            }
+            last = next;
         }
-        next = new LogEntry();
-        next->time = *type1;
-        fread ( buffer, 1, 4, file );
-        next->speed = *type2;
-        fread ( buffer, 1, 8, file );
-        next->latitude = *type3;
-        fread ( buffer, 1, 8, file );
-        next->longitude = *type3;
-        fread ( buffer, 1, 8, file );
-        next->height = *type3;
-        next->photo = -1;
-        next->next = NULL;
-        next->nextDay = NULL;
-        next->nextVisible = NULL;
-        if ( last == NULL ) {
-            first = next;
-        } else {
-            last->next = next;
-            last->nextVisible = next;
-        }
-        last = next;
+        fclose ( file );
+        update();
+        return first;
     }
-    fclose ( file );
-    update();
-    return first;
+    string message = "Can't open file ";
+    message += fileName;
+    errorMsg ( message );
+    return NULL;
 }
 
 sigc::signal<void, LogEntry*> DayView::signalChange() {

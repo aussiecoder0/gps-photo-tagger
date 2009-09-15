@@ -107,38 +107,44 @@ void PhotoWidget::addPhoto ( const char* fileName ) {
     row[modelColumns.locationId] = -1;
     row[modelColumns.entry] = NULL;
     row[modelColumns.path] = fileName;
-    Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( fileName );
-    image->readMetadata();
-    Exiv2::ExifData &exifData = image->exifData();
     string cameraName = "Unknown";
     time_t takeTime = 0;
-    for ( Exiv2::ExifData::const_iterator i = exifData.begin(); i != exifData.end(); ++i ) {
-        int tag = i->tag();
-        if ( tag == 272 ) {
-            stringstream out;
-            out << i->value();
-            cameraName = out.str();
+    try {
+        Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( fileName );
+        image->readMetadata();
+        Exiv2::ExifData &exifData = image->exifData();
+        for ( Exiv2::ExifData::const_iterator i = exifData.begin(); i != exifData.end(); ++i ) {
+            int tag = i->tag();
+            if ( tag == 272 ) {
+                stringstream out;
+                out << i->value();
+                cameraName = out.str();
+            }
+            if ( tag == 306 ) {
+                stringstream out;
+                out << i->value();
+                const char *buffer = out.str().c_str();
+                struct tm *timeinfo = ( tm* ) malloc ( sizeof ( tm ) );
+                timeinfo->tm_year = atoi ( buffer ) - 1900;
+                buffer += 5;
+                timeinfo->tm_mon = atoi ( buffer ) - 1;
+                buffer += 3;
+                timeinfo->tm_mday = atoi ( buffer );
+                buffer += 3;
+                timeinfo->tm_hour = atoi ( buffer );
+                buffer += 3;
+                timeinfo->tm_min = atoi ( buffer );
+                buffer += 3;
+                timeinfo->tm_sec = atoi ( buffer );
+                timeinfo->tm_isdst = 0;
+                takeTime = mktime ( timeinfo );
+                free ( timeinfo );
+            }
         }
-        if ( tag == 306 ) {
-            stringstream out;
-            out << i->value();
-            const char *buffer = out.str().c_str();
-            struct tm *timeinfo = ( tm* ) malloc ( sizeof ( tm ) );
-            timeinfo->tm_year = atoi ( buffer ) - 1900;
-            buffer += 5;
-            timeinfo->tm_mon = atoi ( buffer ) - 1;
-            buffer += 3;
-            timeinfo->tm_mday = atoi ( buffer );
-            buffer += 3;
-            timeinfo->tm_hour = atoi ( buffer );
-            buffer += 3;
-            timeinfo->tm_min = atoi ( buffer );
-            buffer += 3;
-            timeinfo->tm_sec = atoi ( buffer );
-            timeinfo->tm_isdst = 0;
-            takeTime = mktime ( timeinfo );
-            free ( timeinfo );
-        }
+    } catch ( Exiv2::Error& ) {
+        string message = "Can't load exif dtata from ";
+        message += fileName;
+        errorMsg ( message );
     }
     int index = 0;
     bool found = false;

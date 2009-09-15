@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 using namespace std;
@@ -34,5 +35,6 @@ string itos ( int );
 string dtos ( double );
 string coordinate ( bool, double );
 string extractFileName ( string );
+void errorMsg ( string );
 
 #endif /*FUNCTIONS_H_*/
