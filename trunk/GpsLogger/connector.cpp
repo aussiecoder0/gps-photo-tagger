@@ -191,6 +191,8 @@ void Connector::start() {
         sleep ( 1 );
     }
     free ( info );
+    skytraq_set_serial_speed ( device, 1, false );
+    speed = skytraq_determine_speed ( device );
     close ( device );
 }
 
