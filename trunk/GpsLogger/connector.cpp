@@ -1,23 +1,23 @@
 /*
 
-	GPS Photo Tagger
-	Copyright (C) 2009  Jakub Vaník <jakub.vanik@gmail.com>
+ GPS Photo Tagger
+ Copyright (C) 2009  Jakub Vaník <jakub.vanik@gmail.com>
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
 
-*/
+ */
 
 #include "connector.h"
 
@@ -30,13 +30,19 @@ Connector::Connector() {
     first = NULL;
     info = ( skytraq_config* ) malloc ( sizeof ( skytraq_config ) );
     pthread_mutex_init ( &mutex, NULL );
+    pthread_cond_init ( &cond , NULL );
     pthread_create ( &thread, NULL, entryPoint, ( void* ) this );
 }
 
 Connector::~Connector() {
+    pthread_mutex_lock ( &mutex );
     run = false;
-    sleep ( 1 );
+    pthread_cond_signal ( &cond );
+    pthread_mutex_unlock ( &mutex );
+    pthread_join ( thread, NULL );
     free ( info );
+    pthread_mutex_destroy ( &mutex );
+    pthread_cond_destroy ( &cond );
 }
 
 bool Connector::isConnected() {
@@ -120,12 +126,14 @@ LogEntry* Connector::GetFirstEntry() {
 void Connector::doClear() {
     pthread_mutex_lock ( &mutex );
     clear = true;
+    pthread_cond_signal ( &cond );
     pthread_mutex_unlock ( &mutex );
 }
 
 void Connector::doWrite() {
     pthread_mutex_lock ( &mutex );
     write = true;
+    pthread_cond_signal ( &cond );
     pthread_mutex_unlock ( &mutex );
 }
 
@@ -138,6 +146,7 @@ int Connector::doRead ( Glib::Dispatcher *progress, Glib::Dispatcher *done ) {
     this->done = done;
     read = true;
     int sectorsCount = info->total_sectors - info->sectors_left + 1;
+    pthread_cond_signal ( &cond );
     pthread_mutex_unlock ( &mutex );
     return sectorsCount;
 }
@@ -149,14 +158,15 @@ void* Connector::entryPoint ( void *pointer ) {
 }
 
 void Connector::start() {
-    char name[] = "/dev/ttyUSB0";
-    info = ( skytraq_config* ) malloc ( sizeof ( skytraq_config ) );
     pthread_mutex_lock ( &mutex );
+    char name[] = "/dev/ttyUSB0";
     device = open_port ( name );
     if ( device != -1 ) {
+        sleep ( 1 );
         speed = skytraq_determine_speed ( device );
         if ( speed != 0 ) {
-            skytraq_set_serial_speed ( device, 5, false );
+            skytraq_set_serial_speed ( device, SKYTRAQ_SPEED_115200, false );
+            sleep ( 1 );
             speed = skytraq_determine_speed ( device );
             if ( speed != 0 ) {
                 skytraq_read_datalogger_config ( device, info );
@@ -170,9 +180,7 @@ void Connector::start() {
     } else {
         run = false;
     }
-    pthread_mutex_unlock ( &mutex );
     while ( run ) {
-        pthread_mutex_lock ( &mutex );
         if ( clear ) {
             clear = false;
             skytraq_clear_datalog ( device );
@@ -187,13 +195,15 @@ void Connector::start() {
             first = download();
             ( *done ) ();
         }
-        pthread_mutex_unlock ( &mutex );
         sleep ( 1 );
+        pthread_cond_wait ( &cond , &mutex );
     }
-    free ( info );
-    skytraq_set_serial_speed ( device, 1, false );
-    speed = skytraq_determine_speed ( device );
-    close ( device );
+    if ( device != -1 ) {
+        skytraq_set_serial_speed ( device, SKYTRAQ_SPEED_9600, false );
+        close ( device );
+    }
+    pthread_mutex_unlock ( &mutex );
+    pthread_exit ( NULL );
 }
 
 LogEntry* Connector::download() {
@@ -210,12 +220,12 @@ LogEntry* Connector::download() {
         bool valid;
         while ( offset < length ) {
             if ( buffer[offset] == 0x40 ) {
-                decode_long_entry ( buffer + offset,  &time, &x, &y, &z, &speed );
+                decode_long_entry ( buffer + offset, &time, &x, &y, &z, &speed );
                 ecef_to_geo ( x, y, z, &longitude, &latitude, &height );
                 valid = true;
                 offset += 18;
-            } else if (  buffer[offset] == 0x80 ) {
-                decode_short_entry ( buffer + offset,  &time, &x, &y, &z, &speed );
+            } else if ( buffer[offset] == 0x80 ) {
+                decode_short_entry ( buffer + offset, &time, &x, &y, &z, &speed );
                 ecef_to_geo ( x, y, z, &longitude, &latitude, &height );
                 valid = true;
                 offset += 8;
@@ -230,6 +240,7 @@ LogEntry* Connector::download() {
                 next->latitude = latitude;
                 next->longitude = longitude;
                 next->height = height;
+                next->track = -1;
                 next->photo = -1;
                 next->next = NULL;
                 next->nextDay = NULL;

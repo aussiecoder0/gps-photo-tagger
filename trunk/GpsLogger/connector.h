@@ -34,6 +34,7 @@ public:
     long time;
     int speed;
     double latitude, longitude, height;
+    int track;
     int photo;
     LogEntry *next;
     LogEntry *nextDay;
@@ -76,6 +77,7 @@ private:
     Glib::Dispatcher *done;
     pthread_t thread;
     pthread_mutex_t mutex;
+    pthread_cond_t cond;
     int device, speed;
 };
 

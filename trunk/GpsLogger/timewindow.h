@@ -83,6 +83,10 @@ private:
     void onButtonStorno();
     // Signals
     sigc::signal<void, bool, int*> done;
+protected:
+    virtual bool on_delete_event ( GdkEventAny* G_GNUC_UNUSED ) {
+        return true;
+    }
 };
 
 #endif /*TIMEWINDOW_H_*/

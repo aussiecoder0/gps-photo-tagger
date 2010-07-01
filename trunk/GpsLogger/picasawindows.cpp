@@ -37,7 +37,7 @@ LoginWindow::LoginWindow() : table ( 2, 2 ) {
     table.attach ( label2, 0, 1, 1, 2 );
     entry2.set_visibility ( false );
     table.attach ( entry2, 1, 2, 1, 2 );
-    Gtk::HButtonBox *buttonBox = get_action_area();
+    Gtk::ButtonBox *buttonBox = get_action_area();
     button1.set_label ( "Login" );
     button1.signal_clicked().connect ( sigc::mem_fun ( *this, &LoginWindow::onButtonOk ) );
     buttonBox->pack_start ( button1, Gtk::PACK_EXPAND_WIDGET );
@@ -140,7 +140,7 @@ SetupWindow::SetupWindow ( list<AlbumItem> albums, int count ) :
     frame4.add ( table4 );
     progressBar.set_text ( itos ( 0 ) + " %" );
     table4.attach ( progressBar, 0, 1, 0, 1 );
-    Gtk::HButtonBox *buttonBox = get_action_area();
+    Gtk::ButtonBox *buttonBox = get_action_area();
     button1.set_label ( "Upload" );
     button1.signal_clicked().connect ( sigc::mem_fun ( *this, &SetupWindow::onButtonOk ) );
     buttonBox->pack_start ( button1, Gtk::PACK_EXPAND_WIDGET );

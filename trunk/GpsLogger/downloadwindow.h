@@ -40,6 +40,10 @@ private:
     int sectorCount, sectorDone;
     // Widgets
     Gtk::ProgressBar progressBar;
+protected:
+    virtual bool on_delete_event ( GdkEventAny* G_GNUC_UNUSED ) {
+        return true;
+    }
 };
 
 #endif /*DOWNLOADWINDOW_H_*/
