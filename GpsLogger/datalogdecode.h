@@ -28,7 +28,7 @@ using namespace std;
 
 void ecef_to_geo ( double, double, double, double*, double*, double* );
 unsigned long gsp_time_to_timestamp ( int, int );
-void decode_long_entry ( gbuint8*, long*, int*, int*, int*, int* );
-void decode_short_entry ( gbuint8*, long*, int*, int*, int*, int* );
+void decode_long_entry ( const gbuint8*, long*, int*, int*, int*, int* );
+void decode_short_entry ( const gbuint8*, long*, int*, int*, int*, int* );
 
 #endif /*DATALOGDECODE_H_*/

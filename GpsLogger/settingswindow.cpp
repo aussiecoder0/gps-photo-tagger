@@ -65,7 +65,7 @@ SettingsWindow::SettingsWindow() {
     box4.pack_start ( entry2, Gtk::PACK_SHRINK );
     label5.set_label ( "meters" );
     box4.pack_start ( label5, Gtk::PACK_SHRINK );
-    Gtk::HButtonBox *buttonBox = get_action_area();
+    Gtk::ButtonBox *buttonBox = get_action_area();
     button2.set_label ( "OK" );
     button2.signal_clicked().connect ( sigc::mem_fun ( *this, &SettingsWindow::onButtonOk ) );
     buttonBox->pack_start ( button2, Gtk::PACK_EXPAND_WIDGET );

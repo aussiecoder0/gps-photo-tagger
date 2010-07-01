@@ -88,26 +88,28 @@ LogEntry* DayView::load ( const char *fileName ) {
     FILE *file = fopen ( fileName, "r" );
     if ( file ) {
         char buffer[8];
+        size_t size;
         long *type1 = ( long* ) & buffer;
         int *type2 = ( int* ) & buffer;
         double *type3 = ( double* ) & buffer;
         LogEntry *next;
         LogEntry *last = NULL;
         while ( true ) {
-            int size = fread ( buffer, 1, 4, file );
+            size = fread ( buffer, 1, 4, file );
             if ( size == 0 ) {
                 break;
             }
             next = new LogEntry();
             next->time = *type1;
-            fread ( buffer, 1, 4, file );
+            size += fread ( buffer, 1, 4, file );
             next->speed = *type2;
-            fread ( buffer, 1, 8, file );
+            size += fread ( buffer, 1, 8, file );
             next->latitude = *type3;
-            fread ( buffer, 1, 8, file );
+            size += fread ( buffer, 1, 8, file );
             next->longitude = *type3;
-            fread ( buffer, 1, 8, file );
+            size += fread ( buffer, 1, 8, file );
             next->height = *type3;
+            next->track = -1;
             next->photo = -1;
             next->next = NULL;
             next->nextDay = NULL;

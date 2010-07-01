@@ -50,6 +50,10 @@ private:
     void onButtonStorno();
     // Signals
     sigc::signal<void, bool, string, string, LoginWindow*> done;
+protected:
+    virtual bool on_delete_event ( GdkEventAny* G_GNUC_UNUSED ) {
+        return true;
+    }
 };
 
 class SetupWindow : public Gtk::Dialog {
@@ -97,6 +101,10 @@ private:
     void onButtonStorno();
     // Signals
     sigc::signal<void, bool, bool, string, bool, int, SetupWindow*> done;
+protected:
+    virtual bool on_delete_event ( GdkEventAny* G_GNUC_UNUSED ) {
+        return true;
+    }
 };
 
 #endif /*PICASAWINDOWS_H_*/

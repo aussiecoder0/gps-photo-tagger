@@ -233,6 +233,7 @@ void PicasaExport::upload ( bool success, bool existing, string album, bool titl
     } else {
         delete ( setupWindow );
         ready = true;
+        pthread_mutex_destroy ( &mutex );
     }
 }
 
@@ -359,6 +360,7 @@ void PicasaExport::start1() {
     pthread_mutex_lock ( &mutex );
     queueDone = true;
     pthread_mutex_unlock ( &mutex );
+    pthread_exit ( NULL );
 }
 
 void PicasaExport::start2() {
@@ -388,6 +390,7 @@ void PicasaExport::start2() {
         }
     }
     done();
+    pthread_exit ( NULL );
 }
 
 void PicasaExport::onProgress() {
@@ -400,4 +403,5 @@ void PicasaExport::onDone() {
     dialog.run();
     delete ( setupWindow );
     ready = true;
+    pthread_mutex_destroy ( &mutex );
 }

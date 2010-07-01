@@ -72,7 +72,7 @@ PhotoBox::PhotoBox ( string info, const char *path, PhotoBox *next ) :
     pack_start ( photoArea, Gtk::PACK_SHRINK );
     pack_start ( alignment1, Gtk::PACK_SHRINK );
     label1.set_justify ( Gtk::JUSTIFY_LEFT );
-    label1.set_label ( "ID:\nDate:\nTime:\nLatitude:\nLongitude:\n" );
+    label1.set_label ( "File:\nDate:\nTime:\nLatitude:\nLongitude:\n" );
     alignment1.add ( label1 );
     pack_start ( alignment2, Gtk::PACK_SHRINK );
     label2.set_label ( info );
@@ -93,7 +93,7 @@ PhotoWindow::PhotoWindow() {
     // Variables & Objects
     first = NULL;
     // Widgets
-    scrolledWindow.set_size_request ( 400, 300 );
+    scrolledWindow.set_size_request ( 450 , 300 );
     scrolledWindow.set_policy ( Gtk::POLICY_NEVER, Gtk::POLICY_ALWAYS );
     scrolledWindow.set_border_width ( 2 );
     add ( scrolledWindow );

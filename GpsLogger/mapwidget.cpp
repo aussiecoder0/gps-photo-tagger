@@ -1,23 +1,23 @@
 /*
 
-	GPS Photo Tagger
-	Copyright (C) 2009  Jakub Vaník <jakub.vanik@gmail.com>
+ GPS Photo Tagger
+ Copyright (C) 2009  Jakub Vaník <jakub.vanik@gmail.com>
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
 
-*/
+ */
 
 #include "mapwidget.h"
 
@@ -37,7 +37,7 @@ MapWidget::MapWidget() {
     scale.set_draw_value ( true );
     scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
     scale.set_value ( 30 );
-    attach ( scale, 0, 2, 0, 1 , Gtk::FILL, Gtk::SHRINK );
+    attach ( scale, 0, 2, 0, 1, Gtk::FILL, Gtk::SHRINK );
     vScrollBar.set_inverted ( true );
     vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
     attach ( vScrollBar, 1, 2, 1, 2, Gtk::SHRINK, Gtk::FILL );
@@ -160,12 +160,22 @@ void MapWidget::updateScrollBars() {
     double pagesize;
     adjustment = vScrollBar.get_adjustment();
     pagesize = ( double ) height / zoom;
-    adjustment->set_page_size ( pagesize );
-    vScrollBar.set_range ( minLat, maxLat + pagesize );
+    if ( pagesize != 0 ) {
+        adjustment->set_page_size ( pagesize );
+        vScrollBar.set_range ( minLat, maxLat + pagesize );
+    } else {
+        adjustment->set_page_size ( 1 );
+        vScrollBar.set_range ( 0, 1 );
+    }
     adjustment = hScrollBar.get_adjustment();
     pagesize = ( double ) width / zoom;
-    adjustment->set_page_size ( pagesize );
-    hScrollBar.set_range ( minLon, maxLon + pagesize );
+    if ( pagesize != 0 ) {
+        adjustment->set_page_size ( pagesize );
+        hScrollBar.set_range ( minLon, maxLon + pagesize );
+    } else {
+        adjustment->set_page_size ( 1 );
+        hScrollBar.set_range ( 0, 1 );
+    }
 }
 
 void MapWidget::drawLatLine ( int deg, double min, Cairo::RefPtr<Cairo::Context> context ) {

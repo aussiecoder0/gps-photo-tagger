@@ -65,6 +65,10 @@ private:
     void onButtonStorno();
     // Signals
     sigc::signal<void> done;
+protected:
+    virtual bool on_delete_event ( GdkEventAny* G_GNUC_UNUSED ) {
+        return true;
+    }
 };
 
 #endif	/* _SETTINGSWINDOW_H */

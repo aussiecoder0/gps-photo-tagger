@@ -20,8 +20,8 @@
 
  */
 
-#ifndef DATALOGGER_H_
-#define DATALOGGER_H_
+#ifndef datalogger_h
+#define datalogger_h
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -56,14 +56,14 @@ enum {NACK = -1, ACK};
 
 typedef struct SkyTraqPackage {
     gbuint8	length;
-    gbuint8* 		data;
-    gbuint8 		checksum;
+    gbuint8* 	data;
+    gbuint8 	checksum;
 } SkyTraqPackage;
 
 typedef struct skytraq_config {
-    gbuint32 log_wr_ptr;
-    gbuint16 sectors_left;
-    gbuint16  total_sectors;
+    gbuint32    log_wr_ptr;
+    gbuint16    sectors_left;
+    gbuint16    total_sectors;
     gbuint32	max_time;
     gbuint32	min_time;
     gbuint32	max_distance;
@@ -76,15 +76,18 @@ typedef struct skytraq_config {
     unsigned	agps_hours_left;
 } skytraq_config;
 
-void skytraq_read_software_version ( int fd );
-void skytraq_read_datalogger_config ( int fd, skytraq_config* config );
+int skytraq_read_software_version ( int fd );
+int skytraq_read_datalogger_config ( int fd, skytraq_config* config );
 int skytraq_read_datalog_sector ( int fd, gbuint8 sector, gbuint8* buffer );
 void skytraq_clear_datalog ( int fd );
 void skytraq_write_datalogger_config ( int fd, skytraq_config* config );
-void process_buffer ( gbuint8* buffer, int length );
+long process_buffer ( const gbuint8* buffer, const  int length, const  long last_timestamp );
 int skytraq_determine_speed ( int fd ) ;
 unsigned skytraq_mkspeed ( unsigned br );
 int skytraq_set_serial_speed ( int fd, int speed, int permanent );
 void skytraq_read_agps_status ( int fd, skytraq_config* config );
+int skytraq_output_disable ( int fd );
+int skytraq_output_enable_nmea ( int fd );
+int skytraq_output_enable_binary ( int fd );
 
-#endif /*DATALOGGER_H_*/
+#endif

@@ -1,23 +1,23 @@
 /*
 
-	GPS Photo Tagger
-	Copyright (C) 2009  Jakub Vaník <jakub.vanik@gmail.com>
+ GPS Photo Tagger
+ Copyright (C) 2009  Jakub Vaník <jakub.vanik@gmail.com>
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
 
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with this program; if not, write to the Free Software
-	Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  US
 
-*/
+ */
 
 #include "mainwindow.h"
 
@@ -38,6 +38,9 @@ MainWindow::MainWindow() {
     actionGroup->add ( Gtk::Action::create ( "DeviceMenu", "Device" ) );
     actionGroup->add ( Gtk::Action::create ( "DeviceSettings", Gtk::Stock::PREFERENCES, "Settings" ), sigc::mem_fun ( *this, &MainWindow::onMenuDeviceSettings ) );
     actionGroup->add ( Gtk::Action::create ( "DeviceLoad", Gtk::Stock::GO_DOWN, "Load GPS" ), sigc::mem_fun ( *this, &MainWindow::onMenuDeviceLoad ) );
+    actionGroup->add ( Gtk::Action::create ( "TrackMenu", "Tracks" ) );
+    actionGroup->add ( Gtk::Action::create ( "TrackAdd", Gtk::Stock::ADD, "Add track" ), sigc::mem_fun ( *this, &MainWindow::onMenuTrackAdd ) );
+    actionGroup->add ( Gtk::Action::create ( "TrackAuto", Gtk::Stock::DND_MULTIPLE, "Automatic" ), sigc::mem_fun ( *this, &MainWindow::onMenuTrackAuto ) );
     actionGroup->add ( Gtk::Action::create ( "PhotosMenu", "Photos" ) );
     actionGroup->add ( Gtk::Action::create ( "PhotosLoad", Gtk::Stock::DND_MULTIPLE, "Add photos" ), sigc::mem_fun ( *this, &MainWindow::onMenuPhotoLoad ) );
     actionGroup->add ( Gtk::Action::create ( "PhotosSettings", Gtk::Stock::PROPERTIES, "Time settings" ), sigc::mem_fun ( *this, &MainWindow::onMenuPhotoSettings ) );
@@ -57,6 +60,10 @@ MainWindow::MainWindow() {
                          "<menu action='DeviceMenu'>"
                          "<menuitem action='DeviceLoad'/>"
                          "<menuitem action='DeviceSettings'/>"
+                         "</menu>"
+                         "<menu action='TrackMenu'>"
+                         "<menuitem action='TrackAdd'/>"
+                         "<menuitem action='TrackAuto'/>"
                          "</menu>"
                          "<menu action='PhotosMenu'>"
                          "<menuitem action='PhotosLoad'/>"
@@ -86,6 +93,9 @@ MainWindow::MainWindow() {
     mapWidget.set_border_width ( 2 );
     mapWidget.signalPhotoClick().connect ( sigc::mem_fun ( *this, &MainWindow::onPhotoClick ) );
     notebook.append_page ( mapWidget, "Map" );
+    trackWidget.set_border_width ( 2 );
+    trackWidget.signalLock().connect ( sigc::mem_fun ( *this, &MainWindow::onLockCall ) );
+    notebook.append_page ( trackWidget, "Tracks" );
     photoWidget.set_border_width ( 2 );
     photoWidget.signalChange().connect ( sigc::mem_fun ( *this, &MainWindow::onPhotoChange ) );
     photoWidget.signalDone().connect ( sigc::mem_fun ( *this, &MainWindow::onUnlockCall ) );
@@ -109,6 +119,7 @@ MainWindow::MainWindow() {
 
 MainWindow::~MainWindow() {
     dayView.clear();
+    trackWidget.setFirst ( NULL );
     photoWidget.setFirst ( NULL );
 }
 
@@ -125,6 +136,7 @@ void MainWindow::onProgress() {
 void MainWindow::onDone() {
     LogEntry* first = connector.GetFirstEntry();
     dayView.append ( first );
+    trackWidget.setFirst ( first );
     photoWidget.setFirst ( first );
     downloadWindow.hide();
     set_sensitive ( true );
@@ -133,6 +145,7 @@ void MainWindow::onDone() {
 
 void MainWindow::onMenuFileNew() {
     dayView.clear();
+    trackWidget.setFirst ( NULL );
     photoWidget.setFirst ( NULL );
     statusBar.push ( "No data" );
 }
@@ -151,6 +164,7 @@ void MainWindow::onMenuFileLoad() {
     if ( result == Gtk::RESPONSE_OK ) {
         string fileName = dialog.get_filename();
         LogEntry* first = dayView.load ( fileName.c_str() );
+        trackWidget.setFirst ( first );
         photoWidget.setFirst ( first );
         statusBar.push ( "Data from file " + fileName );
     }
@@ -193,6 +207,14 @@ void MainWindow::onMenuDeviceLoad() {
     }
 }
 
+void MainWindow::onMenuTrackAdd() {
+    set_sensitive ( false );
+    trackWidget.AddTrack();
+}
+
+void MainWindow::onMenuTrackAuto() {
+}
+
 void MainWindow::onMenuPhotoLoad() {
     Gtk::FileChooserDialog dialog ( "Please choose photos", Gtk::FILE_CHOOSER_ACTION_OPEN );
     dialog.set_transient_for ( *this );
@@ -202,6 +224,7 @@ void MainWindow::onMenuPhotoLoad() {
     Gtk::FileFilter filter;
     filter.set_name ( "JPG files" );
     filter.add_pattern ( "*.jpg" );
+    filter.add_pattern ( "*.JPG" );
     dialog.add_filter ( filter );
     dialog.set_select_multiple ( true );
     int result = dialog.run();
@@ -230,6 +253,10 @@ void MainWindow::onMenuExportPicasa() {
 
 void MainWindow::onPhotoClick ( int *photos ) {
     photoWidget.showPhotos ( photos );
+}
+
+void MainWindow::onLockCall ( bool lock ) {
+    set_sensitive ( lock );
 }
 
 void MainWindow::onPhotoChange() {

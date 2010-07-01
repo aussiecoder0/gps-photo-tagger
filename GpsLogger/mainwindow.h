@@ -30,6 +30,7 @@
 #include "picasaexport.h"
 #include "photowidget.h"
 #include "settingswindow.h"
+#include "trackwidget.h"
 
 using namespace std;
 
@@ -59,6 +60,7 @@ private:
     Gtk::HBox box2;
     Gtk::Notebook notebook;
     MapWidget mapWidget;
+    TrackWidget trackWidget;
     PhotoWidget photoWidget;
     Gtk::VSeparator seperator;
     Gtk::ScrolledWindow scrolledWindow;
@@ -70,11 +72,14 @@ private:
     void onMenuFileSave();
     void onMenuDeviceSettings();
     void onMenuDeviceLoad();
+    void onMenuTrackAdd();
+    void onMenuTrackAuto();
     void onMenuPhotoLoad();
     void onMenuPhotoSettings();
     void onMenuPhotoClear();
     void onMenuExportPicasa();
     void onPhotoClick ( int* );
+    void onLockCall ( bool );
     void onPhotoChange();
     void onDayChange ( LogEntry* );
     // Windows

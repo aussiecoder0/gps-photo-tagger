@@ -30,9 +30,9 @@ PhotoWidget::PhotoWidget() {
     lastId = -1;
     selectedId = -1;
     listStore = Gtk::ListStore::create ( modelColumns );
+    listStore->set_sort_column ( modelColumns.time, Gtk::SORT_ASCENDING );
     // Widgets
     treeView.set_model ( listStore );
-    treeView.append_column ( "ID", modelColumns.id );
     treeView.append_column ( "Date", modelColumns.dateStr );
     treeView.append_column ( "Time", modelColumns.timeStr );
     treeView.append_column ( "Latitude", modelColumns.latStr );
@@ -179,12 +179,12 @@ void PhotoWidget::showPhotos ( int *photos ) {
         for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
             Gtk::TreeModel::Row row = *iter;
             if ( row[modelColumns.locationId] == *photos2 ) {
-                string info = itos ( row[modelColumns.id] ) + "\n";
+                Glib::ustring path = row[modelColumns.path];
+                string info = extractFileName ( path ) + "\n";
                 info += row[modelColumns.dateStr] + "\n";
                 info += row[modelColumns.timeStr] + "\n";
                 info += row[modelColumns.latStr] + "\n";
                 info += row[modelColumns.lonStr] + "\n";
-                Glib::ustring path = row[modelColumns.path];
                 photoWindow.addPhoto ( info, path.c_str() );
             }
         }
@@ -317,12 +317,12 @@ void PhotoWidget::onMenuShow() {
     for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
         Gtk::TreeModel::Row row = *iter;
         if ( row[modelColumns.id] == selectedId ) {
-            string info = itos ( row[modelColumns.id] ) + "\n";
+            Glib::ustring path = row[modelColumns.path];
+            string info = extractFileName ( path ) + "\n";
             info += row[modelColumns.dateStr] + "\n";
             info += row[modelColumns.timeStr] + "\n";
             info += row[modelColumns.latStr] + "\n";
             info += row[modelColumns.lonStr] + "\n";
-            Glib::ustring path = row[modelColumns.path];
             photoWindow.addPhoto ( info, path.c_str() );
             break;
         }

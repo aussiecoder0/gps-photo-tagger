@@ -19,13 +19,59 @@
     Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111 USA
 
  */
-
 #include "datalogger.h"
 #include <sys/time.h>
+#include <errno.h>
+
+#define SKYTRAQ_RESPONSE_ACK                     0x83
+#define SKYTRAQ_RESPONSE_NACK                    0x84
+
+#define TIMEOUT  1000l
+
+typedef struct timeval hp_time;
+
+static double elapsed ( hp_time *tv ) {
+    hp_time now;
+    double ot = ( double ) tv->tv_sec  * 1000 +
+                ( double ) tv->tv_usec / 1000;
+    double nt;
+    gettimeofday ( &now, NULL );
+    nt = ( double ) now.tv_sec  * 1000 +
+         ( double ) now.tv_usec / 1000;
+
+    return nt - ot;
+}
+
+int read_with_timeout ( int fd, void* buffer, unsigned len, unsigned timeout ) {
+    hp_time start;
+    int offset = 0;
+
+    gettimeofday ( &start, NULL );
+
+    while ( len > 0 && elapsed ( &start ) < timeout ) {
+        int bytesRead = read ( fd, ( char* ) buffer + offset, len );
+        if ( bytesRead < 0 )
+            bytesRead = 0;
+        len = len - bytesRead;
+        offset = offset + bytesRead;
+
+        /* printf("bytes left: %d  time elapsed: %f\n", len, elapsed(&start)
+        );*/
+
+    }
+
+#ifdef DEBUG_ALL
+    if ( len > 0 )
+        DEBUG ( "timeout hit\n" );
+#endif
+
+    return offset;
+}
+
 
 gbuint8 readByte ( int fd ) {
     gbuint8 c;
-    read ( fd, &c, 1 );
+    read_with_timeout ( fd, &c, 1, TIMEOUT );
     return c;
 }
 
@@ -63,7 +109,7 @@ void skytraq_free_package (  SkyTraqPackage* p ) {
 void skytraq_dump_package ( SkyTraqPackage* p ) {
     int i;
     DEBUG ( "PACKAGE ( length=%d, ", p->length );
-    DEBUG ( "msg-id=%02x, ", p->data[0] );
+    DEBUG ( "msg-id=0x%02x, ", p->data[0] );
     DEBUG ( "data=" );
     for ( i = 1; i < p->length; i++ ) {
         DEBUG ( "%02x ", p->data[i] );
@@ -71,19 +117,61 @@ void skytraq_dump_package ( SkyTraqPackage* p ) {
     DEBUG ( ")\n" );
 }
 
-void write_buffer ( int fd, gbuint8* buf, int len ) {
+int write_large_buffer ( int fd, gbuint8* buf, int len ) {
     int i, written;
-    for ( i = 0; i < len;i++ ) {
+    int sum_written = 0;
+
+    for ( i = 0; i < len; i++ ) {
         DEBUG ( "%02x ", buf[i] );
     }
-    written =   write ( fd, buf, len );
 
-    DEBUG ( " (%d byte written) ", written );
+    // make output blocking
+    int flags = fcntl ( fd, F_GETFL );
+    fcntl ( fd, F_SETFL, flags & ~O_NONBLOCK );
+
+
+    while ( len > 0 ) {
+
+        gbuint8* data = buf + sum_written;
+
+        written = write ( fd, data, len );
+
+        if ( written < 0 ) {
+            if ( errno == EAGAIN ) {
+                usleep ( 10000 );
+                written = 0;
+            } else {
+
+                // make output non-blocking
+                fcntl ( fd, F_SETFL, flags | O_NONBLOCK );
+
+                return written;
+            }
+        }
+        len -= written;
+
+        DEBUG ( " (%d byte written) ", written );
+        sum_written += written;
+    }
+
+    // make output non-blocking
+    fcntl ( fd, F_SETFL, flags | O_NONBLOCK );
+
+    return sum_written;
+}
+
+int write_buffer ( int fd, gbuint8* buf, int len ) {
+
+    if ( len > 20 ) {
+        return write_large_buffer ( fd, buf, len );
+    }
+
+    return write ( fd, buf, len );
 }
 
 void write_skytraq_package ( int fd, SkyTraqPackage* p ) {
 
-    gbuint8* data = ( gbuint8* ) malloc ( 7 + p->length );
+    gbuint8* data = ( unsigned char* ) malloc ( 7 + p->length );
 
     int i;
 
@@ -110,13 +198,16 @@ void write_skytraq_package ( int fd, SkyTraqPackage* p ) {
   * not return before a package has been read. You have to call skytraq_free_package() on
   * the result.
   */
-SkyTraqPackage* skytraq_read_next_package ( int fd ) {
+SkyTraqPackage* skytraq_read_next_package ( int fd, unsigned timeout ) {
     int len;
     gbuint8 c, lastByte;
+    hp_time start;
 
+    DEBUG ( "skytraq_read_next_package\n" );
+    gettimeofday ( &start, NULL );
 
-    len = read ( fd, &c, 1 );
-    while ( len > 0 ) {
+    len = read_with_timeout ( fd, &c, 1, timeout );
+    while ( len > 0 && elapsed ( &start ) < timeout ) {
         if ( ( lastByte == 0xa0 ) && ( c == 0xa1 ) ) {
             SkyTraqPackage* pkg;
             int dataRead;
@@ -127,7 +218,7 @@ SkyTraqPackage* skytraq_read_next_package ( int fd ) {
             pkg->data = ( unsigned char* ) malloc ( pkg->length );
             dataRead = 0;
             while ( dataRead < pkg->length ) {
-                dataRead += read ( fd, pkg->data + dataRead, ( pkg->length - dataRead ) );
+                dataRead += read_with_timeout ( fd, pkg->data + dataRead, ( pkg->length - dataRead ), TIMEOUT );
             }
 
             pkg->checksum = readByte ( fd );
@@ -141,40 +232,40 @@ SkyTraqPackage* skytraq_read_next_package ( int fd ) {
                     return pkg;
                 }
             }
-
-
         }
 
         lastByte = c;
-        len = read ( fd, &c, 1 );
+        len = read_with_timeout ( fd, &c, 1, timeout );
     }
 
     return NULL;
 }
 
-int skytraq_write_package_with_response ( int fd, SkyTraqPackage* p ) {
+
+int skytraq_write_package_with_response ( int fd, SkyTraqPackage* p, unsigned timeout ) {
+    int retries_left = 3;
     gbuint8 request_message_id;
 
     request_message_id = p->data[0];
     write_skytraq_package ( fd, p );
 
-    DEBUG ( "Waiting for ACK with msg id %d\n", request_message_id );
+    DEBUG ( "Waiting for ACK with msg id 0x%02x\n", request_message_id );
 
-    while ( 1 ) {
-        SkyTraqPackage* response = skytraq_read_next_package ( fd );
+    while ( retries_left ) {
+        SkyTraqPackage* response = skytraq_read_next_package ( fd, timeout );
 
         if ( response != NULL ) {
             skytraq_dump_package ( response );
 
-            if ( response->data[0] == 0x83 ) {
+            if ( response->data[0] == SKYTRAQ_RESPONSE_ACK ) {
                 /* ACK - Is it a response to my request? */
-                DEBUG ( "got ACK for msg id: %02x\n", response->data[1] );
+                DEBUG ( "got ACK for msg id: 0x%02x\n", response->data[1] );
                 if ( response->data[1] == request_message_id ) {
                     skytraq_free_package ( response );
                     return ACK;
 
                 }
-            } else if ( response->data[0] == 0x84 ) {
+            } else if ( response->data[0] == SKYTRAQ_RESPONSE_NACK ) {
                 /* NACK - Is it a response to my request? */
                 DEBUG ( "got NACK\n" );
                 if ( response->data[1] == request_message_id ) {
@@ -184,7 +275,11 @@ int skytraq_write_package_with_response ( int fd, SkyTraqPackage* p ) {
             }
             skytraq_free_package ( response );
         }
+
+        retries_left--;
     }
+
+    return ERROR;
 }
 
 int raw ( int fd ) {
@@ -218,8 +313,9 @@ SkyTraqPackage* skytraq_new_package ( int length ) {
     return request;
 }
 
+
 int open_port ( char* device ) {
-    int    fd = open ( device, O_RDWR );
+    int    fd = open ( device, O_RDWR | O_NONBLOCK );
     raw ( fd );
     return fd;
 }
@@ -259,35 +355,32 @@ int set_port_speed ( int fd,  unsigned speed ) {
     return tcsetattr ( fd, TCSADRAIN, &io ) ? ERROR : SUCCESS;
 }
 
-typedef struct timeval hp_time;
-
-static double elapsed ( hp_time *tv ) {
-    hp_time now;
-    double ot = ( double ) tv->tv_sec  * 1000 +
-                ( double ) tv->tv_usec / 1000;
-    double nt;
-    gettimeofday ( &now, NULL );
-    nt = ( double ) now.tv_sec  * 1000 +
-         ( double ) now.tv_usec / 1000;
-    return nt - ot;
-}
-
-int read_with_timeout ( int fd, void* buffer, unsigned len, unsigned timeout ) {
+/**
+  * Read a zero-terminated string from the GPS device.
+  */
+int read_string ( int fd, gbuint8* buffer, int max_length, unsigned timeout ) {
+    int len, bytes_read = 0;
+    gbuint8 c;
     hp_time start;
-    int offset = 0;
-
     gettimeofday ( &start, NULL );
 
+    len = read_with_timeout ( fd, &c, 1, timeout );
     while ( len > 0 && elapsed ( &start ) < timeout ) {
-        int bytesRead = read ( fd, ( unsigned char* ) buffer + offset, len );
-        len = len - bytesRead;
-        offset = offset + bytesRead;
+        buffer[bytes_read] = c;
+
+        if ( c == 0 ) {
+            /* found end of string */
+            return bytes_read;
+        }
+
+        bytes_read++;
+
+        if ( bytes_read >= max_length ) {
+            return bytes_read; /* Did not reach the end of the string within <max_length> bytes. */
+        }
+
+        len = read_with_timeout ( fd, &c, 1, timeout );
     }
-
-#ifdef DEBUG_ALL
-    if ( len > 0 )
-        DEBUG ( "timeout hit\n" );
-#endif
-
-    return offset;
+    DEBUG ( "read_string: timeout\n" );
+    return -1;
 }

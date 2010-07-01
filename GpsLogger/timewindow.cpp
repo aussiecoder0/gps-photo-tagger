@@ -22,7 +22,7 @@
 #include "timewindow.h"
 
 CameraRow::CameraRow ( string cameraName, int timeShift, CameraRow *next ) :
-        adjustment1 ( 0, 0, 24, 1, 1, 0 ),
+        adjustment1 ( 0, 0, 23, 1, 1, 0 ),
         spin1 ( adjustment1 ),
         adjustment2 ( 0, 0, 59, 1, 1, 0 ),
         spin2 ( adjustment2 ),
@@ -103,7 +103,7 @@ TimeWindow::TimeWindow() {
     // Widgets
     Gtk::VBox *box = get_vbox();
     box->set_size_request ( -1, 200 );
-    Gtk::HButtonBox *buttonBox = get_action_area();
+    Gtk::ButtonBox *buttonBox = get_action_area();
     button1.set_label ( "OK" );
     button1.signal_clicked().connect ( sigc::mem_fun ( *this, &TimeWindow::onButtonOk ) );
     buttonBox->pack_start ( button1, Gtk::PACK_EXPAND_WIDGET );
