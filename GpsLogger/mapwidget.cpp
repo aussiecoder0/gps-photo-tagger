@@ -70,6 +70,7 @@ MapWidget::MapWidget() {
     done.connect ( sigc::mem_fun ( *this, &MapWidget::onDone ) );
     // Variables & Objects
     firstVisible = NULL;
+    firstClickable = NULL;
     width = 0;
     height = 0;
     mapGenerator.setDone ( &done );
@@ -106,28 +107,29 @@ MapWidget::~MapWidget() {
 void MapWidget::setFirstVisible ( LogEntry *firstVisible ) {
     this->firstVisible = firstVisible;
     LogEntry* next = firstVisible;
-    double minLat = 0;
-    double minLon = 0;
-    double maxLat = 0;
-    double maxLon = 0;
-    while ( next != NULL ) {
-        if ( next->latitude < minLat ) {
-            minLat = next->latitude;
+    if ( next != NULL ) {
+        double minLat = next->latitude;
+        double minLon = next->longitude;
+        double maxLat = next->latitude;
+        double maxLon = next->longitude;
+        while ( next != NULL ) {
+            if ( next->latitude < minLat ) {
+                minLat = next->latitude;
+            }
+            if ( next->longitude < minLon ) {
+                minLon = next->longitude;
+            }
+            if ( next->latitude > maxLat ) {
+                maxLat = next->latitude;
+            }
+            if ( next->longitude > maxLon ) {
+                maxLon = next->longitude;
+            }
+            next = next->nextVisible;
         }
-        if ( next->longitude < minLon ) {
-            minLon = next->longitude;
-        }
-        if ( next->latitude > maxLat ) {
-            maxLat = next->latitude;
-        }
-        if ( next->longitude > maxLon ) {
-            maxLon = next->longitude;
-        }
-        next = next->nextVisible;
+        vScrollBar.set_range ( minLat, maxLat );
+        hScrollBar.set_range ( minLon, maxLon );
     }
-    //vScrollBar.set_range ( minLon, maxLon );
-    //hScrollBar.set_range ( minLat, maxLat );
-
     doRedraw();
 }
 
@@ -149,15 +151,40 @@ sigc::signal<void, int*> MapWidget::signalPhotoClick() {
     return photoClick;
 }
 
+MapWidget::Clickable::Clickable ( double x, double y, int photoIndex ) {
+    this->x = x;
+    this->y = y;
+    this->photoIndex = photoIndex;
+    subitem = NULL;
+    next = NULL;
+}
+
+MapWidget::Clickable::~Clickable() {
+    if ( subitem != NULL ) {
+        delete ( subitem );
+        subitem = NULL;
+    }
+    if ( next != NULL ) {
+        delete ( next );
+        next = NULL;
+    }
+}
+
 Cairo::RefPtr<Cairo::ImageSurface> MapWidget::drawOverlay ( Frame frame ) {
     Cairo::RefPtr<Cairo::ImageSurface> image = Cairo::ImageSurface::create ( Cairo::FORMAT_ARGB32, width, height );
     Cairo::RefPtr<Cairo::Context> context = Cairo::Context::create ( image );
     LogEntry* next = firstVisible;
     double xKoef = width / ( frame.maxLon - frame.minLon );
     double yKoef = height / ( frame.maxLat - frame.minLat );
+    if ( firstClickable != NULL ) {
+        delete ( firstClickable );
+        firstClickable = NULL;
+    }
     bool lastOut = false;
     double lastX = 0;
     double lastY = 0;
+    int color = -1;
+    int count = 0;
     while ( next != NULL ) {
         double x = ( next->longitude - frame.minLon ) * xKoef;
         double y = ( next->latitude - frame.minLat ) * yKoef;
@@ -169,17 +196,99 @@ Cairo::RefPtr<Cairo::ImageSurface> MapWidget::drawOverlay ( Frame frame ) {
                 }
                 context->line_to ( x, y );
             } else {
+                if ( lastOut == false ) {
+                    context->line_to ( x, y );
+                }
                 lastOut = true;
             }
             lastX = x;
             lastY = y;
         }
+        if ( count > 0 ) {
+            count--;
+            if ( count == 0 ) {
+                prepareColor ( context, color );
+                context->stroke();
+                if ( lastOut == false ) {
+                    context->move_to ( x, y );
+                }
+                color = -1;
+            }
+        }
+        if ( next->track != -1 ) {
+            prepareColor ( context, color );
+            context->stroke();
+            if ( lastOut == false ) {
+                context->move_to ( x, y );
+            }
+            askTrack ( next->track, &color, &count );
+        }
+        if ( next->photo != -1 ) {
+            addClickable ( x, y, next->photo );
+        }
         next = next->nextVisible;
     }
-    context->set_source_rgb ( 0, 0, 0 );
-    context->set_line_width ( 1 );
+    prepareColor ( context, color );
     context->stroke();
+    drawClickables ( context );
     return image;
+}
+
+void MapWidget::prepareColor ( Cairo::RefPtr<Cairo::Context> context, int color ) {
+    if ( color != -1 ) {
+        int palete[] = { 0xED, 0xD4, 0x00, 0xF5, 0x79, 0x00, 0xC1, 0x7D, 0x11, 0x73, 0xd2, 0x16, 0x34, 0x65, 0xA4, 0x75, 0x50, 0x7B, 0xCC, 0x00, 0x00 };
+        int index = ( color % 7 ) * 3;
+        double rChannel = ( double ) palete[index + 0] / 255;
+        double gChannel = ( double ) palete[index + 1] / 255;
+        double bChannel = ( double ) palete[index + 2] / 255;
+        context->set_source_rgb ( rChannel, gChannel, bChannel );
+        context->set_line_width ( 2 );
+    } else {
+        context->set_source_rgb ( 0, 0, 0 );
+        context->set_line_width ( 2 );
+    }
+}
+
+void MapWidget::addClickable ( double x, double y, int photoIndex ) {
+    Clickable *newOne = new Clickable ( x, y, photoIndex );
+    if ( firstClickable == NULL ) {
+        firstClickable = newOne;
+    } else {
+        Clickable *next = firstClickable;
+        bool inSublist = false;
+        while ( next != NULL ) {
+            if ( ( inSublist == false ) && ( abs ( x - next->x ) < 32 ) && ( abs ( y - next->y ) < 32 ) ) {
+                if ( next->subitem == NULL ) {
+                    next->subitem = newOne;
+                    next = NULL;
+                } else {
+                    next = next->subitem;
+                }
+                inSublist = true;
+            } else {
+                if ( next->next == NULL ) {
+                    next->next = newOne;
+                    next = NULL;
+                } else {
+                    next = next->next;
+                }
+            }
+        }
+    }
+}
+
+void MapWidget::drawClickables ( Cairo::RefPtr<Cairo::Context> context ) {
+    Clickable *next = firstClickable;
+    Cairo::RefPtr<Cairo::ImageSurface> image = Cairo::ImageSurface::create_from_png ( "image.png" );
+    while ( next != NULL ) {
+        context->save();
+        context->set_source ( image, next->x - 16, next->y - 16 );
+        context->rectangle ( next->x - 16, next->y - 16, 32, 32 );
+        context->clip();
+        context->paint();
+        context->restore();
+        next = next->next;
+    }
 }
 
 void MapWidget::onDone() {
@@ -209,7 +318,37 @@ void MapWidget::onResize ( int width, int height ) {
 }
 
 bool MapWidget::onButtonPress ( GdkEventButton *event ) {
-
+    int button = event->button;
+    int x = event->x;
+    int y = event->y;
+    if ( button == 1 ) {
+        Clickable *next = firstClickable;
+        while ( next != NULL ) {
+            if ( ( abs ( x - next->x ) < 16 ) && ( abs ( y - next->y ) < 16 ) ) {
+                Clickable *next2 = next->subitem;
+                int count = 1;
+                while ( next2 != NULL ) {
+                    count++;
+                    next2 = next2->next;
+                }
+                int *photos = ( int* ) malloc ( ( count + 1 ) * sizeof ( int ) );
+                photos[0] = next->photoIndex;
+                next2 = next->subitem;
+                int *photos2 = photos;
+                while ( next2 != NULL ) {
+                    photos2++;
+                    *photos2 = next2->photoIndex;
+                    next2 = next2->next;
+                }
+                photos2++;
+                *photos2 = -1;
+                photoClick ( photos );
+                free ( photos );
+                break;
+            }
+            next = next->next;
+        }
+    }
     return true;
 }
 

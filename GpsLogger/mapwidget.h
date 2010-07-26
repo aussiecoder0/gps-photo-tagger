@@ -62,13 +62,27 @@ public:
     sigc::signal<void, int, int*, int*> signalAskTrack();
     sigc::signal<void, int*> signalPhotoClick();
 private:
+    // Structs & Classes
+    class Clickable {
+    public:
+        Clickable ( double, double, int );
+        virtual ~Clickable();
+        double x, y;
+        int photoIndex;
+        Clickable *subitem;
+        Clickable *next;
+    };
     // Variables & Objects
     LogEntry *firstVisible;
+    Clickable *firstClickable;
     int width, height;
     MapGenerator mapGenerator;
     Cairo::RefPtr<Cairo::ImageSurface> overlay;
     // Functions
     Cairo::RefPtr<Cairo::ImageSurface> drawOverlay ( Frame );
+    void prepareColor ( Cairo::RefPtr<Cairo::Context>, int );
+    void addClickable ( double, double, int );
+    void drawClickables ( Cairo::RefPtr<Cairo::Context> );
     // Dispatchers
     Glib::Dispatcher done;
     // Dispatcher signals
