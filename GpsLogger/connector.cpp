@@ -199,6 +199,7 @@ void Connector::start() {
         pthread_cond_wait ( &cond , &mutex );
     }
     if ( device != -1 ) {
+        skytraq_output_enable_nmea ( device );
         skytraq_set_serial_speed ( device, SKYTRAQ_SPEED_9600, false );
         close ( device );
     }

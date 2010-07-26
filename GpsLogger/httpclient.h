@@ -25,7 +25,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
-#include <curl.h>
+#include <curl/curl.h>
 
 using namespace std;
 

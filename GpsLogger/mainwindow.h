@@ -22,7 +22,7 @@
 #ifndef _MAINWINDOW_H
 #define	_MAINWINDOW_H
 
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 #include "connector.h"
 #include "dayview.h"
 #include "downloadwindow.h"
@@ -77,10 +77,12 @@ private:
     void onMenuPhotoLoad();
     void onMenuPhotoSettings();
     void onMenuPhotoClear();
+    void onMenuExportExif();
     void onMenuExportPicasa();
+    void onAskTrack ( int, int*, int* );
     void onPhotoClick ( int* );
     void onLockCall ( bool );
-    void onPhotoChange();
+    void onChange();
     void onDayChange ( LogEntry* );
     // Windows
     SettingsWindow settingsWindow;

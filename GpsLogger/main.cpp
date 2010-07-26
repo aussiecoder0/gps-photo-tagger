@@ -19,8 +19,8 @@
 
 */
 
-#include <gtkmm.h>
-#include <Magick++.h>
+#include <gtkmm-2.4/gtkmm.h>
+#include <ImageMagick/Magick++.h>
 #include "mainwindow.h"
 
 using namespace std;

@@ -25,11 +25,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <queue>
-#include <exif.hpp>
-#include <gtkmm.h>
-#include <image.hpp>
-#include <libxml++/libxml++.h>
-#include <Magick++.h>
+#include <exiv2/exif.hpp>
+#include <exiv2/image.hpp>
+#include <gtkmm-2.4/gtkmm.h>
+#include <ImageMagick/Magick++.h>
+#include <libxml++-2.6/libxml++/libxml++.h>
 #include "functions.h"
 #include "httpclient.h"
 #include "photowidget.h"

@@ -22,7 +22,7 @@
 #ifndef TRACKWINDOW_H_
 #define TRACKWINDOW_H_
 
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 #include "colorrenderrer.h"
 #include "connector.h"
 #include "functions.h"

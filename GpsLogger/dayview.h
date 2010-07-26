@@ -22,7 +22,7 @@
 #ifndef DAYVIEW_H_
 #define DAYVIEW_H_
 
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 #include "connector.h"
 #include "functions.h"
 

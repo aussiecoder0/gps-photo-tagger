@@ -22,7 +22,7 @@
 #ifndef _CONNECTOR_H
 #define	_CONNECTOR_H
 
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 #include "datalogdecode.h"
 #include "datalogger.h"
 #include "lowlevel.h"
