@@ -23,9 +23,9 @@
 #define PHOTOWIDGET_H_
 
 #include <cstdlib>
-#include <gtkmm.h>
-#include <image.hpp>
-#include <exif.hpp>
+#include <exiv2/exif.hpp>
+#include <exiv2/image.hpp>
+#include <gtkmm-2.4/gtkmm.h>
 #include "connector.h"
 #include "functions.h"
 #include "photowindow.h"
@@ -54,6 +54,7 @@ public:
     // Action calls
     void showPhotos ( int* );
     void showSettings();
+    void writeExif();
     // Signals
     sigc::signal<void> signalChange();
     sigc::signal<void> signalDone();

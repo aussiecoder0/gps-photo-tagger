@@ -212,6 +212,70 @@ void PhotoWidget::showSettings() {
     }
 }
 
+void PhotoWidget::writeExif() {
+    typedef Gtk::TreeModel::Children Children;
+    Children children = listStore->children();
+    for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
+        Gtk::TreeModel::Row row = *iter;
+        LogEntry* entry = row[modelColumns.entry];
+        if ( entry != NULL ) {
+            double latitude = entry->latitude;
+            double longitude = entry->longitude;
+            Glib::ustring path = row[modelColumns.path];
+            Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( path );
+            image->readMetadata();
+            Exiv2::ExifData &exifData = image->exifData();
+            {
+                string referent;
+                if ( longitude >= 0 ) {
+                    referent = "E";
+                } else {
+                    referent = "W";
+                    longitude = -longitude;
+                }
+                Exiv2::ExifKey key ( "Exif.GPSInfo.GPSLongitude" );
+                Exiv2::ExifData::iterator pos = exifData.findKey ( key );
+                Exiv2::URationalValue::AutoPtr value ( new Exiv2::URationalValue );
+                value->value_.push_back ( std::make_pair ( ( int ) longitude, 1 ) );
+                longitude = ( longitude - ( int ) longitude ) * 60;
+                value->value_.push_back ( std::make_pair ( ( int ) longitude, 1 ) );
+                longitude = ( longitude - ( int ) longitude ) * 60000;
+                value->value_.push_back ( std::make_pair ( ( int ) longitude, 1000 ) );
+                if ( pos != exifData.end() ) {
+                    pos->setValue ( value.get() );
+                } else {
+                    exifData.add ( key, value.get() );
+                }
+                exifData["Exif.GPSInfo.GPSLongitudeRef"] = referent;
+            }
+            {
+                string referent;
+                if ( latitude >= 0 ) {
+                    referent = "N";
+                } else {
+                    referent = "S";
+                    latitude = -latitude;
+                }
+                Exiv2::ExifKey key ( "Exif.GPSInfo.GPSLatitude" );
+                Exiv2::ExifData::iterator pos = exifData.findKey ( key );
+                Exiv2::URationalValue::AutoPtr value ( new Exiv2::URationalValue );
+                value->value_.push_back ( std::make_pair ( ( int ) latitude, 1 ) );
+                latitude = ( latitude - ( int ) latitude ) * 60;
+                value->value_.push_back ( std::make_pair ( ( int ) latitude, 1 ) );
+                latitude = ( latitude - ( int ) latitude ) * 60000;
+                value->value_.push_back ( std::make_pair ( ( int ) latitude, 1000 ) );
+                if ( pos != exifData.end() ) {
+                    pos->setValue ( value.get() );
+                } else {
+                    exifData.add ( key, value.get() );
+                }
+                exifData["Exif.GPSInfo.GPSLatitudeRef"] = referent;
+            }
+            image->writeMetadata();
+        }
+    }
+}
+
 sigc::signal<void> PhotoWidget::signalChange() {
     return change;
 }

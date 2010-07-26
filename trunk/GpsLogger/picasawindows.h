@@ -22,7 +22,7 @@
 #ifndef PICASAWINDOWS_H_
 #define PICASAWINDOWS_H_
 
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 #include "functions.h"
 
 using namespace std;

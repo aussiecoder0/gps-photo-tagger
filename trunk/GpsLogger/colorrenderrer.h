@@ -23,7 +23,7 @@
 #define COLORRENDERRER_H_
 
 #include <cstdlib>
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 
 using namespace std;
 class ColorCellRenderer : public Gtk::CellRenderer {

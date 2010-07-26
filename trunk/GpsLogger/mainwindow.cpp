@@ -46,6 +46,7 @@ MainWindow::MainWindow() {
     actionGroup->add ( Gtk::Action::create ( "PhotosSettings", Gtk::Stock::PROPERTIES, "Time settings" ), sigc::mem_fun ( *this, &MainWindow::onMenuPhotoSettings ) );
     actionGroup->add ( Gtk::Action::create ( "PhotosClear", Gtk::Stock::DELETE, "Delete all" ), sigc::mem_fun ( *this, &MainWindow::onMenuPhotoClear ) );
     actionGroup->add ( Gtk::Action::create ( "ExportMenu", "Export" ) );
+    actionGroup->add ( Gtk::Action::create ( "ExportExif", Gtk::Stock::EDIT, "Write EXIF" ), sigc::mem_fun ( *this, &MainWindow::onMenuExportExif ) );
     actionGroup->add ( Gtk::Action::create ( "ExportPicasa", Gtk::Stock::NETWORK, "Picasa Web" ), sigc::mem_fun ( *this, &MainWindow::onMenuExportPicasa ) );
     uiManager = Gtk::UIManager::create();
     uiManager->insert_action_group ( actionGroup );
@@ -71,6 +72,7 @@ MainWindow::MainWindow() {
                          "<menuitem action='PhotosClear'/>"
                          "</menu>"
                          "<menu action='ExportMenu'>"
+                         "<menuitem action='ExportExif'/>"
                          "<menuitem action='ExportPicasa'/>"
                          "</menu>"
                          "</menubar>"
@@ -91,13 +93,15 @@ MainWindow::MainWindow() {
     notebook.set_border_width ( 2 );
     box2.pack_start ( notebook, Gtk::PACK_EXPAND_WIDGET );
     mapWidget.set_border_width ( 2 );
+    mapWidget.signalAskTrack().connect ( sigc::mem_fun ( *this, &MainWindow::onAskTrack ) );
     mapWidget.signalPhotoClick().connect ( sigc::mem_fun ( *this, &MainWindow::onPhotoClick ) );
     notebook.append_page ( mapWidget, "Map" );
     trackWidget.set_border_width ( 2 );
+    trackWidget.signalChange().connect ( sigc::mem_fun ( *this, &MainWindow::onChange ) );
     trackWidget.signalLock().connect ( sigc::mem_fun ( *this, &MainWindow::onLockCall ) );
     notebook.append_page ( trackWidget, "Tracks" );
     photoWidget.set_border_width ( 2 );
-    photoWidget.signalChange().connect ( sigc::mem_fun ( *this, &MainWindow::onPhotoChange ) );
+    photoWidget.signalChange().connect ( sigc::mem_fun ( *this, &MainWindow::onChange ) );
     photoWidget.signalDone().connect ( sigc::mem_fun ( *this, &MainWindow::onUnlockCall ) );
     notebook.append_page ( photoWidget, "Photos" );
     box2.pack_start ( seperator, Gtk::PACK_SHRINK );
@@ -213,6 +217,7 @@ void MainWindow::onMenuTrackAdd() {
 }
 
 void MainWindow::onMenuTrackAuto() {
+    trackWidget.AutoTrack();
 }
 
 void MainWindow::onMenuPhotoLoad() {
@@ -246,9 +251,17 @@ void MainWindow::onMenuPhotoClear() {
     photoWidget.clearPhotos();
 }
 
+void MainWindow::onMenuExportExif() {
+    photoWidget.writeExif();
+}
+
 void MainWindow::onMenuExportPicasa() {
     list<PhotoItem> photoList = photoWidget.getPhotos();
     picasaExport.doExport ( photoList );
+}
+
+void MainWindow::onAskTrack ( int trackId, int *color, int *count ) {
+    return trackWidget.askTrack ( trackId, color, count );
 }
 
 void MainWindow::onPhotoClick ( int *photos ) {
@@ -259,7 +272,7 @@ void MainWindow::onLockCall ( bool lock ) {
     set_sensitive ( lock );
 }
 
-void MainWindow::onPhotoChange() {
+void MainWindow::onChange() {
     mapWidget.doRedraw();
 }
 

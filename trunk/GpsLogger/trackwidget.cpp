@@ -57,6 +57,7 @@ TrackWidget::~TrackWidget() {
 
 void TrackWidget::setFirst ( LogEntry *first ) {
     this->first = first;
+    relocateAll();
 }
 
 void TrackWidget::AddTrack() {
@@ -70,8 +71,79 @@ void TrackWidget::AddTrack() {
     }
 }
 
+void TrackWidget::AutoTrack() {
+}
+
+void TrackWidget::askTrack ( int trackId, int *color, int *count ) {
+    typedef Gtk::TreeModel::Children Children;
+    Children children = listStore->children();
+    for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
+        Gtk::TreeModel::Row row = *iter;
+        if ( row[modelColumns.id] == trackId ) {
+            *color = row[modelColumns.color];
+            *count = row[modelColumns.count];
+            break;
+        }
+    }
+}
+
+sigc::signal<void> TrackWidget::signalChange() {
+    return change;
+}
+
 sigc::signal<void, bool> TrackWidget::signalLock() {
     return lock;
+}
+
+void TrackWidget::relocateAll() {
+    LogEntry* next = first;
+    typedef Gtk::TreeModel::Children Children;
+    Children children = listStore->children();
+    while ( next != NULL ) {
+        next->track = -1;
+        next = next->next;
+    }
+    next = first;
+    for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
+        Gtk::TreeModel::Row row = *iter;
+        row[modelColumns.firstEntry] = NULL;
+        int id = row[modelColumns.id];
+        long time = row[modelColumns.time1];
+        while ( next != NULL ) {
+            int relative = difftime ( next->time, time );
+            if ( ( relative > 0 ) && ( relative < 60 ) ) {
+                row[modelColumns.firstEntry] = next;
+                next->track = id;
+                break;
+            }
+            if ( next->nextDay == NULL ) {
+                next = next->next;
+            } else {
+                int diff = difftime ( next->nextDay->time, time );
+                if ( diff > 0 ) {
+                    next = next->next;
+                } else {
+                    next = next->nextDay;
+                }
+            }
+        }
+    }
+    for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
+        Gtk::TreeModel::Row row = *iter;
+        long time = row[modelColumns.time2];
+        int counter = 0;
+        LogEntry* next = row[modelColumns.firstEntry];
+        while ( next != NULL ) {
+            int relative = difftime ( next->time, time );
+            if ( relative > 0 ) {
+                break;
+            }
+            counter++;
+            next = next->next;
+        }
+        row[modelColumns.count] = counter;
+    }
+    change();
 }
 
 void TrackWidget::onButtonPress ( GdkEventButton *event ) {
@@ -97,6 +169,7 @@ void TrackWidget::onButtonPress ( GdkEventButton *event ) {
 }
 
 void TrackWidget::onMenuEdit() {
+    lock ( false );
     typedef Gtk::TreeModel::Children Children;
     Children children = listStore->children();
     for ( Children::iterator iter = children.begin(); iter != children.end(); ++iter ) {
@@ -131,6 +204,7 @@ void TrackWidget::onEditDone ( bool success, int itemId, string name, int color,
         if ( itemId == -1 ) {
             row = * ( listStore->append() );
             lastId++;
+            row[modelColumns.id] = lastId;
         } else {
             typedef Gtk::TreeModel::Children Children;
             Children children = listStore->children();
@@ -141,7 +215,6 @@ void TrackWidget::onEditDone ( bool success, int itemId, string name, int color,
                 }
             }
         }
-        row[modelColumns.id] = lastId;
         row[modelColumns.name] = name;
         row[modelColumns.color] = color;
         row[modelColumns.time1] = start;
@@ -156,6 +229,7 @@ void TrackWidget::onEditDone ( bool success, int itemId, string name, int color,
         timeinfo = localtime ( &stop );
         strftime ( buffer, 11, "%H:%M:%S", timeinfo );
         row[modelColumns.timeStr2] = buffer;
+        relocateAll();
     }
     lock ( true );
 }

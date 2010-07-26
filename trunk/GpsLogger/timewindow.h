@@ -22,7 +22,7 @@
 #ifndef TIMEWINDOW_H_
 #define TIMEWINDOW_H_
 
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 
 using namespace std;
 

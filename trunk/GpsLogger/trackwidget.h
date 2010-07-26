@@ -23,7 +23,7 @@
 #define TRACKWIDGET_H_
 
 #include <cstdlib>
-#include <gtkmm.h>
+#include <gtkmm-2.4/gtkmm.h>
 #include "colorrenderrer.h"
 #include "connector.h"
 #include "functions.h"
@@ -40,7 +40,10 @@ public:
     void setFirst ( LogEntry* );
     // Action calls
     void AddTrack();
+    void AutoTrack();
+    void askTrack ( int, int*, int* );
     // Signals
+    sigc::signal<void> signalChange();
     sigc::signal<void, bool> signalLock();
 private:
     // Structs & Classes
@@ -78,6 +81,8 @@ private:
     Glib::RefPtr<Gtk::ListStore> listStore;
     Glib::RefPtr<Gtk::TreeModelSort> sortedModel;
     ColorCellRenderer cellRenderer;
+    // Functions
+    void relocateAll();
     // Widgets
     Gtk::TreeView treeView;
     Gtk::Menu menu;
@@ -90,6 +95,7 @@ private:
     // Window signals
     void onEditDone ( bool, int, string, int, long, long );
     // Signals
+    sigc::signal<void> change;
     sigc::signal<void, bool> lock;
 };
 
