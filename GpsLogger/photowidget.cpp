@@ -221,56 +221,64 @@ void PhotoWidget::writeExif() {
         if ( entry != NULL ) {
             double latitude = entry->latitude;
             double longitude = entry->longitude;
+            double height = entry->height;
             Glib::ustring path = row[modelColumns.path];
             Exiv2::Image::AutoPtr image = Exiv2::ImageFactory::open ( path );
             image->readMetadata();
             Exiv2::ExifData &exifData = image->exifData();
-            {
-                string referent;
-                if ( longitude >= 0 ) {
-                    referent = "E";
-                } else {
-                    referent = "W";
-                    longitude = -longitude;
-                }
-                Exiv2::ExifKey key ( "Exif.GPSInfo.GPSLongitude" );
-                Exiv2::ExifData::iterator pos = exifData.findKey ( key );
-                Exiv2::URationalValue::AutoPtr value ( new Exiv2::URationalValue );
-                value->value_.push_back ( std::make_pair ( ( int ) longitude, 1 ) );
-                longitude = ( longitude - ( int ) longitude ) * 60;
-                value->value_.push_back ( std::make_pair ( ( int ) longitude, 1 ) );
-                longitude = ( longitude - ( int ) longitude ) * 60000;
-                value->value_.push_back ( std::make_pair ( ( int ) longitude, 1000 ) );
-                if ( pos != exifData.end() ) {
-                    pos->setValue ( value.get() );
-                } else {
-                    exifData.add ( key, value.get() );
-                }
-                exifData["Exif.GPSInfo.GPSLongitudeRef"] = referent;
+            Exiv2::XmpData &xmpData = image->xmpData();
+            string refLon;
+            if ( longitude >= 0 ) {
+                refLon = "E";
+            } else {
+                refLon = "W";
+                longitude = -longitude;
             }
-            {
-                string referent;
-                if ( latitude >= 0 ) {
-                    referent = "N";
-                } else {
-                    referent = "S";
-                    latitude = -latitude;
-                }
-                Exiv2::ExifKey key ( "Exif.GPSInfo.GPSLatitude" );
-                Exiv2::ExifData::iterator pos = exifData.findKey ( key );
-                Exiv2::URationalValue::AutoPtr value ( new Exiv2::URationalValue );
-                value->value_.push_back ( std::make_pair ( ( int ) latitude, 1 ) );
-                latitude = ( latitude - ( int ) latitude ) * 60;
-                value->value_.push_back ( std::make_pair ( ( int ) latitude, 1 ) );
-                latitude = ( latitude - ( int ) latitude ) * 60000;
-                value->value_.push_back ( std::make_pair ( ( int ) latitude, 1000 ) );
-                if ( pos != exifData.end() ) {
-                    pos->setValue ( value.get() );
-                } else {
-                    exifData.add ( key, value.get() );
-                }
-                exifData["Exif.GPSInfo.GPSLatitudeRef"] = referent;
+            Exiv2::ExifKey keyLon ( "Exif.GPSInfo.GPSLongitude" );
+            Exiv2::ExifData::iterator posLon = exifData.findKey ( keyLon );
+            Exiv2::URationalValue::AutoPtr valLon ( new Exiv2::URationalValue );
+            valLon->value_.push_back ( std::make_pair ( ( int ) longitude, 1 ) );
+            string xmpLon = itos ( ( int ) longitude ) + ",";
+            longitude = ( longitude - ( int ) longitude ) * 60;
+            valLon->value_.push_back ( std::make_pair ( ( int ) longitude, 1 ) );
+            xmpLon += dtos ( longitude );
+            longitude = ( longitude - ( int ) longitude ) * 60000;
+            valLon->value_.push_back ( std::make_pair ( ( int ) longitude, 1000 ) );
+            if ( posLon != exifData.end() ) {
+                posLon->setValue ( valLon.get() );
+            } else {
+                exifData.add ( keyLon, valLon.get() );
             }
+            exifData["Exif.GPSInfo.GPSLongitudeRef"] = refLon;
+            xmpLon += refLon;
+            string refLat;
+            if ( latitude >= 0 ) {
+                refLat = "N";
+            } else {
+                refLat = "S";
+                latitude = -latitude;
+            }
+            Exiv2::ExifKey keyLat ( "Exif.GPSInfo.GPSLatitude" );
+            Exiv2::ExifData::iterator posLat = exifData.findKey ( keyLat );
+            Exiv2::URationalValue::AutoPtr valLat ( new Exiv2::URationalValue );
+            valLat->value_.push_back ( std::make_pair ( ( int ) latitude, 1 ) );
+            string xmpLat = itos ( ( int ) latitude ) + ",";
+            latitude = ( latitude - ( int ) latitude ) * 60;
+            valLat->value_.push_back ( std::make_pair ( ( int ) latitude, 1 ) );
+            xmpLat += dtos ( latitude );
+            latitude = ( latitude - ( int ) latitude ) * 60000;
+            valLat->value_.push_back ( std::make_pair ( ( int ) latitude, 1000 ) );
+            if ( posLat != exifData.end() ) {
+                posLat->setValue ( valLat.get() );
+            } else {
+                exifData.add ( keyLat, valLat.get() );
+            }
+            exifData["Exif.GPSInfo.GPSLatitudeRef"] = refLat;
+            xmpLat += refLat;
+            exifData["Exif.GPSInfo.GPSAltitude"] = Exiv2::Rational ( ( int ) ( height * 1000 ), 1000 );
+            xmpData["Xmp.exif.GPSLongitude"] = xmpLon;
+            xmpData["Xmp.exif.GPSLatitude"] = xmpLat;
+            xmpData["Xmp.exif.GPSAltitude"] = itos ( ( int ) ( height * 1000 ) ) + "/1000";
             image->writeMetadata();
         }
     }
