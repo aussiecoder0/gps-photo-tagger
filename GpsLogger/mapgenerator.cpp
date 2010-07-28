@@ -76,9 +76,31 @@ void MapGenerator::setCenter ( double latitude, double longitude ) {
     adjustMap();
 }
 
-void MapGenerator::setZoom ( int zoom ) {
-    this->zoom = zoom;
+void MapGenerator::setZoom ( double zoom ) {
+    this->zoom = exp ( zoom );
     adjustMap();
+}
+
+double MapGenerator::doCalcZoom ( double minLat, double minLon, double maxLat, double maxLon ) {
+    double latitude = ( minLat + maxLat ) / 2;
+    double longitude = ( minLon + maxLon ) / 2;
+    double tmpLon = longitude;
+    projection.forward ( tmpLon, minLat );
+    tmpLon = longitude;
+    projection.forward ( tmpLon, maxLat );
+    double latRange = ( maxLat - minLat ) * 1.1 / height;
+    double tmpLat = latitude;
+    projection.forward ( minLon, tmpLat );
+    tmpLat = latitude;
+    projection.forward ( maxLon, tmpLat );
+    double lonRange = ( maxLon - minLon ) * 1.1 / width;
+    double range;
+    if ( latRange > lonRange ) {
+        range = latRange;
+    } else {
+        range = lonRange;
+    }
+    return log ( range );
 }
 
 Frame MapGenerator::doGenerate ( Cairo::RefPtr<Cairo::ImageSurface> &image ) {
@@ -87,9 +109,9 @@ Frame MapGenerator::doGenerate ( Cairo::RefPtr<Cairo::ImageSurface> &image ) {
     Cairo::RefPtr<Cairo::ImageSurface> validImage = this->image;
     pthread_mutex_unlock ( &mutex );
     Frame frame;
-    frame.minLat = 0;
+    frame.minLat = height;
     frame.minLon = 0;
-    frame.maxLat = height;
+    frame.maxLat = 0;
     frame.maxLon = width;
     mapnik::CoordTransform transform = map.view_transform();
     transform.backward ( &frame.minLon, &frame.minLat );
@@ -115,7 +137,7 @@ Frame MapGenerator::doGenerate ( Cairo::RefPtr<Cairo::ImageSurface> &image ) {
         double yKoef = height / ( frame.maxLat - frame.minLat );
         double ySize = ( validFrame.maxLat - validFrame.minLat ) * yKoef;
         double yScale = ySize / validImage->get_height();
-        double yCorner = ( validFrame.minLat - frame.minLat ) * yKoef / yScale;
+        double yCorner = ( frame.maxLat - validFrame.maxLat ) * yKoef / yScale;
         context->scale ( xScale, yScale );
         context->set_source ( validImage, xCorner, yCorner );
         context->paint();
@@ -160,12 +182,15 @@ void MapGenerator::addLayer ( mapnik::Map &map, string name ) {
 }
 
 void MapGenerator::adjustMap() {
-    double minLat = latitude;
-    double minLon = longitude - 10.0 / zoom;
-    double maxLat = latitude;
-    double maxLon = longitude + 10.0 / zoom;
-    projection.forward ( minLon, minLat );
-    projection.forward ( maxLon, maxLat );
+    double latitude = this->latitude;
+    double longitude = this->longitude;
+    projection.forward ( longitude, latitude );
+    double zoomLat = this->zoom * height / 2;
+    double zoomLon = this->zoom * width / 2;
+    double minLat = latitude - zoomLat;
+    double minLon = longitude - zoomLon;
+    double maxLat = latitude + zoomLat;
+    double maxLon = longitude + zoomLon;
     mapnik::Envelope<double> envelope ( minLon, minLat, maxLon, maxLat );
     map.zoomToBox ( envelope );
 }

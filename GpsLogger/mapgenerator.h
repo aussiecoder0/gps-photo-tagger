@@ -56,8 +56,9 @@ public:
     void setDone ( Glib::Dispatcher* );
     void setSize ( int, int );
     void setCenter ( double, double );
-    void setZoom ( int );
+    void setZoom ( double );
     // Action calls
+    double doCalcZoom ( double, double, double, double );
     Frame doGenerate ( Cairo::RefPtr<Cairo::ImageSurface>& );
     Frame doTake ( Cairo::RefPtr<Cairo::ImageSurface>& );
 private:
@@ -69,7 +70,7 @@ private:
     bool valid;
     int width, height;
     double latitude, longitude;
-    int zoom;
+    double zoom;
     mapnik::Map map;
     mapnik::projection projection;
     bool run, correct;

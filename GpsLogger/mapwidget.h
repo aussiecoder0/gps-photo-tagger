@@ -76,10 +76,17 @@ private:
     LogEntry *firstVisible;
     Clickable *firstClickable;
     int width, height;
+    double latRange, lonRange;
+    double minLat, minLon, maxLat, maxLon;
+    sigc::connection scaleConnection;
+    sigc::connection vScrollConnection;
+    sigc::connection hScrollConnection;
     MapGenerator mapGenerator;
     Cairo::RefPtr<Cairo::ImageSurface> overlay;
     // Functions
-    Cairo::RefPtr<Cairo::ImageSurface> drawOverlay ( Frame );
+    void setupScroll();
+    void updateScroll();
+    void drawOverlay ( Frame );
     void prepareColor ( Cairo::RefPtr<Cairo::Context>, int );
     void addClickable ( double, double, int );
     void drawClickables ( Cairo::RefPtr<Cairo::Context> );
