@@ -78,9 +78,12 @@ private:
     int width, height;
     double latRange, lonRange;
     double minLat, minLon, maxLat, maxLon;
-    sigc::connection scaleConnection;
-    sigc::connection vScrollConnection;
-    sigc::connection hScrollConnection;
+    sigc::connection scaleCon;
+    sigc::connection vScrollCon;
+    sigc::connection hScrollCon;
+    bool buttonDown;
+    int downX, downY;
+    double downLat, downLon;
     MapGenerator mapGenerator;
     Cairo::RefPtr<Cairo::ImageSurface> overlay;
     // Functions
@@ -104,7 +107,6 @@ private:
     void onPosChange();
     void onResize ( int, int );
     bool onButtonPress ( GdkEventButton* );
-    bool onMotionNotify ( GdkEventMotion* );
     bool onButtonRelease ( GdkEventButton* );
     bool onScroll ( GdkEventScroll* );
     // Signals
