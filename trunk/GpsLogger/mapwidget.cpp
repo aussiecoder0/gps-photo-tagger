@@ -73,18 +73,23 @@ MapWidget::MapWidget() {
     firstClickable = NULL;
     width = 0;
     height = 0;
+    latRange = 0;
+    lonRange = 0;
+    minLat = 0;
+    minLon = 0;
+    maxLat = 0;
+    maxLon = 0;
     mapGenerator.setDone ( &done );
     // Widgets
-    scale.set_range ( 10, 500 );
-    scale.set_value_pos ( Gtk::POS_LEFT );
-    scale.set_draw_value ( true );
-    scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
-    scale.set_value ( 500 );
-    attach ( scale, 0, 2, 0, 1, Gtk::FILL, Gtk::SHRINK );
+    scale.set_draw_value ( false );
+    scale.set_range ( 0, 10 );
+    scale.set_inverted ( true );
+    scaleConnection = scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
+    attach ( scale, 0, 1, 0, 1, Gtk::FILL, Gtk::SHRINK );
     vScrollBar.set_inverted ( true );
-    vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    vScrollConnection = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
     attach ( vScrollBar, 1, 2, 1, 2, Gtk::SHRINK, Gtk::FILL );
-    hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    hScrollConnection = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
     attach ( hScrollBar, 0, 1, 2, 3, Gtk::FILL, Gtk::SHRINK );
     mapArea.signalResize().connect ( sigc::mem_fun ( *this, &MapWidget::onResize ) );
     mapArea.set_events ( Gdk::BUTTON_PRESS_MASK | Gdk::POINTER_MOTION_MASK | Gdk::BUTTON_RELEASE_MASK );
@@ -93,12 +98,6 @@ MapWidget::MapWidget() {
     mapArea.signal_button_release_event().connect ( sigc::mem_fun ( *this, &MapWidget::onButtonRelease ) );
     mapArea.signal_scroll_event().connect ( sigc::mem_fun ( *this, &MapWidget::onScroll ) );
     attach ( mapArea, 0, 1, 1, 2 );
-
-    vScrollBar.set_range ( 49.0, 51.0 );
-    vScrollBar.set_value ( 50.07449 );
-    hScrollBar.set_range ( 12.0, 14.0 );
-    hScrollBar.set_value ( 12.37085 );
-
 }
 
 MapWidget::~MapWidget() {
@@ -108,10 +107,10 @@ void MapWidget::setFirstVisible ( LogEntry *firstVisible ) {
     this->firstVisible = firstVisible;
     LogEntry* next = firstVisible;
     if ( next != NULL ) {
-        double minLat = next->latitude;
-        double minLon = next->longitude;
-        double maxLat = next->latitude;
-        double maxLon = next->longitude;
+        minLat = next->latitude;
+        minLon = next->longitude;
+        maxLat = next->latitude;
+        maxLon = next->longitude;
         while ( next != NULL ) {
             if ( next->latitude < minLat ) {
                 minLat = next->latitude;
@@ -127,16 +126,23 @@ void MapWidget::setFirstVisible ( LogEntry *firstVisible ) {
             }
             next = next->nextVisible;
         }
-        vScrollBar.set_range ( minLat, maxLat );
-        hScrollBar.set_range ( minLon, maxLon );
+    } else {
+        minLat = 0;
+        minLon = 0;
+        maxLat = 0;
+        maxLon = 0;
     }
+    setupScroll();
     doRedraw();
+    updateScroll();
 }
 
 void MapWidget::doRedraw() {
     Cairo::RefPtr<Cairo::ImageSurface> image;
     Frame frame = mapGenerator.doGenerate ( image );
-    overlay = drawOverlay ( frame );
+    latRange = frame.maxLat - frame.minLat;
+    lonRange = frame.maxLon - frame.minLon;
+    drawOverlay ( frame );
     Cairo::RefPtr<Cairo::Context> context = Cairo::Context::create ( image );
     context->set_source ( overlay, 0, 0 );
     context->paint();
@@ -170,7 +176,48 @@ MapWidget::Clickable::~Clickable() {
     }
 }
 
-Cairo::RefPtr<Cairo::ImageSurface> MapWidget::drawOverlay ( Frame frame ) {
+void MapWidget::setupScroll () {
+    double zoom = mapGenerator.doCalcZoom ( minLat, minLon, maxLat, maxLon );
+    double latitude = ( minLat + maxLat ) / 2;
+    double longitude = ( minLon + maxLon ) / 2;
+    scaleConnection.disconnect();
+    vScrollConnection.disconnect();
+    hScrollConnection.disconnect();
+    scale.set_value ( zoom );
+    mapGenerator.setZoom ( scale.get_value() );
+    vScrollBar.get_adjustment()->set_page_size ( 0 );
+    vScrollBar.set_range ( -90, 90 );
+    vScrollBar.set_value ( latitude );
+    hScrollBar.get_adjustment()->set_page_size ( 0 );
+    hScrollBar.set_range ( -180, 180 );
+    hScrollBar.set_value ( longitude );
+    mapGenerator.setCenter ( vScrollBar.get_value(), hScrollBar.get_value() );
+    scaleConnection = scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
+    vScrollConnection = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    hScrollConnection = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+}
+
+void MapWidget::updateScroll() {
+    if ( ( minLat != 0 ) || ( minLon != 0 ) || ( maxLat != 0 ) || ( maxLon != 0 ) ) {
+        vScrollBar.set_sensitive ( true );
+        vScrollBar.get_adjustment()->set_page_size ( 0 );
+        vScrollBar.set_range ( minLat, maxLat + latRange );
+        vScrollBar.get_adjustment()->set_page_size ( latRange );
+        hScrollBar.set_sensitive ( true );
+        hScrollBar.get_adjustment()->set_page_size ( 0 );
+        hScrollBar.set_range ( minLon, maxLon + lonRange );
+        hScrollBar.get_adjustment()->set_page_size ( lonRange );
+    } else {
+        vScrollBar.set_sensitive ( false );
+        vScrollBar.get_adjustment()->set_page_size ( 0 );
+        vScrollBar.set_range ( -90, 90 );
+        hScrollBar.set_sensitive ( false );
+        hScrollBar.get_adjustment()->set_page_size ( 0 );
+        hScrollBar.set_range ( -180, 180 );
+    }
+}
+
+void MapWidget::drawOverlay ( Frame frame ) {
     Cairo::RefPtr<Cairo::ImageSurface> image = Cairo::ImageSurface::create ( Cairo::FORMAT_ARGB32, width, height );
     Cairo::RefPtr<Cairo::Context> context = Cairo::Context::create ( image );
     LogEntry* next = firstVisible;
@@ -187,7 +234,7 @@ Cairo::RefPtr<Cairo::ImageSurface> MapWidget::drawOverlay ( Frame frame ) {
     int count = 0;
     while ( next != NULL ) {
         double x = ( next->longitude - frame.minLon ) * xKoef;
-        double y = ( next->latitude - frame.minLat ) * yKoef;
+        double y = ( frame.maxLat - next->latitude ) * yKoef;
         if ( ( abs ( x - lastX ) > 1 ) || ( abs ( y - lastY ) > 1 ) ) {
             if ( ( x >= 0 ) && ( x < width ) && ( y >= 0 ) && ( y < height ) ) {
                 if ( lastOut ) {
@@ -231,7 +278,7 @@ Cairo::RefPtr<Cairo::ImageSurface> MapWidget::drawOverlay ( Frame frame ) {
     prepareColor ( context, color );
     context->stroke();
     drawClickables ( context );
-    return image;
+    overlay = image;
 }
 
 void MapWidget::prepareColor ( Cairo::RefPtr<Cairo::Context> context, int color ) {
@@ -303,6 +350,7 @@ void MapWidget::onDone() {
 void MapWidget::onZoomChange() {
     mapGenerator.setZoom ( scale.get_value() );
     doRedraw();
+    updateScroll();
 }
 
 void MapWidget::onPosChange() {
@@ -315,6 +363,7 @@ void MapWidget::onResize ( int width, int height ) {
     this->height = height;
     mapGenerator.setSize ( width, height );
     doRedraw();
+    updateScroll();
 }
 
 bool MapWidget::onButtonPress ( GdkEventButton *event ) {
@@ -363,6 +412,13 @@ bool MapWidget::onButtonRelease ( GdkEventButton *event ) {
 }
 
 bool MapWidget::onScroll ( GdkEventScroll *event ) {
-
+    int direction = event->direction;
+    double value = scale.get_value();
+    if ( direction == GDK_SCROLL_UP ) {
+        scale.set_value ( value - 0.1 );
+    }
+    if ( direction == GDK_SCROLL_DOWN ) {
+        scale.set_value ( value + 0.1 );
+    }
     return true;
 }
