@@ -26,15 +26,19 @@ LoginWindow::LoginWindow() : table ( 2, 2 ) {
     set_title ( "Google Account login" );
     set_resizable ( false );
     set_deletable ( false );
+    // Variables & Objects
+    config = Settings::getSection ( "picasa" );
     // Widgets
     Gtk::VBox *box = get_vbox();
     table.set_border_width ( 5 );
     box->pack_start ( table, Gtk::PACK_SHRINK );
     label1.set_label ( "Username:" );
     table.attach ( label1, 0, 1, 0, 1 );
+    entry1.set_text ( config->getString ( "user" ) );
     table.attach ( entry1, 1, 2, 0, 1 );
     label2.set_label ( "Password:" );
     table.attach ( label2, 0, 1, 1, 2 );
+    entry2.set_text ( config->getString ( "password" ) );
     entry2.set_visibility ( false );
     table.attach ( entry2, 1, 2, 1, 2 );
     Gtk::ButtonBox *buttonBox = get_action_area();

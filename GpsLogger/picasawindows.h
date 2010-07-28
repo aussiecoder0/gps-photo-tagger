@@ -24,6 +24,7 @@
 
 #include <gtkmm-2.4/gtkmm.h>
 #include "functions.h"
+#include "settings.h"
 
 using namespace std;
 
@@ -40,6 +41,8 @@ public:
     // Signals
     sigc::signal<void, bool, string, string, LoginWindow*> signalDone();
 private:
+    // Variables & Objects
+    SettingsSection *config;
     // Widgets
     Gtk::Table table;
     Gtk::Label label1, label2;

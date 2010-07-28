@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='utf-8'?>
+<settings>
+  <section name="device">
+    <value key="port" type="string">/dev/ttyUSB0</value>
+  </section>
+  <section name="postgis">
+    <value key="host" type="string">127.0.0.1</value>
+    <value key="port" type="int">5432</value>
+    <value key="databese" type="string">gis</value>
+    <value key="user" type="string">gis</value>
+    <value key="password" type="string">gis</value>
+  </section>
+  <section name="picasa">
+    <value key="user" type="string">jakub.vanik</value>
+    <value key="password" type="string"></value>
+  </section>
+</settings>
+
