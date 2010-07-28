@@ -79,22 +79,25 @@ MapWidget::MapWidget() {
     minLon = 0;
     maxLat = 0;
     maxLon = 0;
+    buttonDown = false;
     mapGenerator.setDone ( &done );
     // Widgets
     scale.set_draw_value ( false );
     scale.set_range ( 0, 10 );
     scale.set_inverted ( true );
-    scaleConnection = scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
+    scale.set_update_policy ( Gtk::UPDATE_DELAYED );
+    scaleCon = scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
     attach ( scale, 0, 1, 0, 1, Gtk::FILL, Gtk::SHRINK );
     vScrollBar.set_inverted ( true );
-    vScrollConnection = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    vScrollBar.set_update_policy ( Gtk::UPDATE_DELAYED );
+    vScrollCon = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
     attach ( vScrollBar, 1, 2, 1, 2, Gtk::SHRINK, Gtk::FILL );
-    hScrollConnection = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    hScrollBar.set_update_policy ( Gtk::UPDATE_DELAYED );
+    hScrollCon = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
     attach ( hScrollBar, 0, 1, 2, 3, Gtk::FILL, Gtk::SHRINK );
     mapArea.signalResize().connect ( sigc::mem_fun ( *this, &MapWidget::onResize ) );
-    mapArea.set_events ( Gdk::BUTTON_PRESS_MASK | Gdk::POINTER_MOTION_MASK | Gdk::BUTTON_RELEASE_MASK );
+    mapArea.set_events ( Gdk::BUTTON_PRESS_MASK | Gdk::BUTTON_RELEASE_MASK );
     mapArea.signal_button_press_event().connect ( sigc::mem_fun ( *this, &MapWidget::onButtonPress ) );
-    mapArea.signal_motion_notify_event().connect ( sigc::mem_fun ( *this, &MapWidget::onMotionNotify ) );
     mapArea.signal_button_release_event().connect ( sigc::mem_fun ( *this, &MapWidget::onButtonRelease ) );
     mapArea.signal_scroll_event().connect ( sigc::mem_fun ( *this, &MapWidget::onScroll ) );
     attach ( mapArea, 0, 1, 1, 2 );
@@ -180,9 +183,9 @@ void MapWidget::setupScroll () {
     double zoom = mapGenerator.doCalcZoom ( minLat, minLon, maxLat, maxLon );
     double latitude = ( minLat + maxLat ) / 2;
     double longitude = ( minLon + maxLon ) / 2;
-    scaleConnection.disconnect();
-    vScrollConnection.disconnect();
-    hScrollConnection.disconnect();
+    scaleCon.disconnect();
+    vScrollCon.disconnect();
+    hScrollCon.disconnect();
     scale.set_value ( zoom );
     mapGenerator.setZoom ( scale.get_value() );
     vScrollBar.get_adjustment()->set_page_size ( 0 );
@@ -192,9 +195,9 @@ void MapWidget::setupScroll () {
     hScrollBar.set_range ( -180, 180 );
     hScrollBar.set_value ( longitude );
     mapGenerator.setCenter ( vScrollBar.get_value(), hScrollBar.get_value() );
-    scaleConnection = scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
-    vScrollConnection = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
-    hScrollConnection = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    scaleCon = scale.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onZoomChange ) );
+    vScrollCon = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+    hScrollCon = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
 }
 
 void MapWidget::updateScroll() {
@@ -393,21 +396,37 @@ bool MapWidget::onButtonPress ( GdkEventButton *event ) {
                 *photos2 = -1;
                 photoClick ( photos );
                 free ( photos );
-                break;
+                return true;
             }
             next = next->next;
         }
+        buttonDown = true;
+        downX = x;
+        downY = y;
+        downLat = vScrollBar.get_value();
+        downLon = hScrollBar.get_value();
+        mapArea.get_window()->set_cursor ( Gdk::Cursor ( Gdk::FLEUR ) );
     }
     return true;
 }
 
-bool MapWidget::onMotionNotify ( GdkEventMotion *event ) {
-
-    return true;
-}
-
 bool MapWidget::onButtonRelease ( GdkEventButton *event ) {
-
+    int button = event->button;
+    int x = event->x;
+    int y = event->y;
+    if ( buttonDown ) {
+        if ( button == 1 ) {
+            buttonDown = false;
+            vScrollCon.disconnect();
+            hScrollCon.disconnect();
+            vScrollBar.set_value ( downLat + ( double ) ( y - downY ) * latRange / height );
+            hScrollBar.set_value ( downLon + ( double ) ( downX - x ) * lonRange / width );
+            vScrollCon = vScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+            hScrollCon = hScrollBar.signal_value_changed().connect ( sigc::mem_fun ( *this, &MapWidget::onPosChange ) );
+            onPosChange();
+        }
+    }
+    mapArea.get_window()->set_cursor ( Gdk::Cursor ( Gdk::LEFT_PTR ) );
     return true;
 }
 
