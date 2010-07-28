@@ -29,6 +29,7 @@
 #include "mapwidget.h"
 #include "picasaexport.h"
 #include "photowidget.h"
+#include "settings.h"
 #include "settingswindow.h"
 #include "trackwidget.h"
 
@@ -41,6 +42,7 @@ public:
     virtual ~MainWindow();
 private:
     // Variables & Objects
+    Settings settings;
     Connector connector;
     PicasaExport picasaExport;
     // Functions

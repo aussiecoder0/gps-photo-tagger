@@ -27,6 +27,7 @@ MapGenerator::MapGenerator() :
     mapnik::datasource_cache::instance()->register_datasources ( "/usr/lib/mapnik/0.7/input/" );
     mapnik::freetype_engine::register_font ( "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf" );
     // Variables & Objects
+    config = Settings::getSection ( "postgis" );
     valid = false;
     width = 0;
     height = 0;
@@ -168,12 +169,12 @@ void* MapGenerator::entryPoint ( void *pointer ) {
 void MapGenerator::addLayer ( mapnik::Map &map, string name ) {
     mapnik::parameters parameters;
     parameters["type"] = "postgis";
-    parameters["host"] = "localhost";
-    parameters["port"] = 5432;
-    parameters["dbname"] = "gis";
+    parameters["host"] = config->getString ( "host" );
+    parameters["port"] = config->getInt ( "port" );
+    parameters["dbname"] = config->getString ( "database" );
     parameters["table"] = "planet_osm_" + name;
-    parameters["user"] = "gis";
-    parameters["password"] = "gis";
+    parameters["user"] = config->getString ( "user" );
+    parameters["password"] = config->getString ( "password" );
     mapnik::Layer layer ( name );
     layer.set_datasource ( mapnik::datasource_cache::instance()->create ( parameters ) );
     layer.add_style ( name + "-border" );

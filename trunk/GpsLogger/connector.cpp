@@ -23,6 +23,7 @@
 
 Connector::Connector() {
     // Variables & Objects
+    config = Settings::getSection ( "device" );
     run = true;
     clear = false;
     write = false;
@@ -159,8 +160,11 @@ void* Connector::entryPoint ( void *pointer ) {
 
 void Connector::start() {
     pthread_mutex_lock ( &mutex );
-    char name[] = "/dev/ttyUSB0";
-    device = open_port ( name );
+    string port = config->getString ( "port" );
+    char *buffer = ( char* ) malloc ( port.size() + 1 );
+    strcpy ( buffer, port.c_str() );
+    device = open_port ( buffer );
+    free ( buffer );
     if ( device != -1 ) {
         sleep ( 1 );
         speed = skytraq_determine_speed ( device );

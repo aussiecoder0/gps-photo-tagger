@@ -1,13 +1,13 @@
 makefile: gpslogger
 
 format:
-	astyle --style=kr -pPn colorrenderrer.h connector.h datalogger.h downloadwindow.h httpclient.h mainwindow.h mapgenerator.h photowidget.h picasaexport.h settingswindow.h trackwidget.h datalogdecode.h dayview.h functions.h lowlevel.h mapwidget.h photowindow.h picasawindows.h timewindow.h trackwindow.h
-	astyle --style=kr -pPn colorrenderrer.cpp connector.cpp datalogdecode.cpp datalogger.cpp dayview.cpp downloadwindow.cpp functions.cpp httpclient.cpp lowlevel.cpp main.cpp mainwindow.cpp mapgenerator.cpp mapwidget.cpp photowidget.cpp photowindow.cpp picasaexport.cpp picasawindows.cpp settingswindow.cpp timewindow.cpp trackwidget.cpp trackwindow.cpp
+	astyle --style=kr -pPn colorrenderrer.h connector.h datalogger.h downloadwindow.h httpclient.h mainwindow.h mapgenerator.h photowidget.h picasaexport.h settings.h settingswindow.h trackwidget.h datalogdecode.h dayview.h functions.h lowlevel.h mapwidget.h photowindow.h picasawindows.h timewindow.h trackwindow.h
+	astyle --style=kr -pPn colorrenderrer.cpp connector.cpp datalogdecode.cpp datalogger.cpp dayview.cpp downloadwindow.cpp functions.cpp httpclient.cpp lowlevel.cpp main.cpp mainwindow.cpp mapgenerator.cpp mapwidget.cpp photowidget.cpp photowindow.cpp picasaexport.cpp picasawindows.cpp settings.cpp settingswindow.cpp timewindow.cpp trackwidget.cpp trackwindow.cpp
 
 all: gpslogger
 
-gpslogger: colorrenderrer.o connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapgenerator.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settingswindow.o timewindow.o trackwidget.o trackwindow.o
-	g++ -o"gpslogger" `pkg-config --libs gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --libs` `Magick++-config --libs` -lboost_thread -lmapnik colorrenderrer.o connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapgenerator.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settingswindow.o timewindow.o trackwidget.o trackwindow.o
+gpslogger: colorrenderrer.o connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapgenerator.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settings.o settingswindow.o timewindow.o trackwidget.o trackwindow.o
+	g++ -o"gpslogger" `pkg-config --libs gtkmm-2.4 exiv2 libxml++-2.6` `curl-config --libs` `Magick++-config --libs` -lboost_thread -lmapnik colorrenderrer.o connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapgenerator.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settings.o settingswindow.o timewindow.o trackwidget.o trackwindow.o
 
 colorrenderrer.o: colorrenderrer.cpp
 	g++ -O3 -c -ansi -I"/usr/include/ImageMagick" `pkg-config --cflags gtkmm-2.4 libxml++-2.6` colorrenderrer.cpp
@@ -60,6 +60,9 @@ picasaexport.o: picasaexport.cpp
 picasawindows.o: picasawindows.cpp
 	g++ -O3 -c -ansi -I"/usr/include/ImageMagick" `pkg-config --cflags gtkmm-2.4 libxml++-2.6` picasawindows.cpp
 
+settings.o: settings.cpp
+	g++ -O3 -c -ansi -I"/usr/include/ImageMagick" `pkg-config --cflags gtkmm-2.4 libxml++-2.6` settings.cpp
+
 settingswindow.o: settingswindow.cpp
 	g++ -O3 -c -ansi -I"/usr/include/ImageMagick" `pkg-config --cflags gtkmm-2.4 libxml++-2.6` settingswindow.cpp
 
@@ -73,5 +76,5 @@ trackwindow.o: trackwindow.cpp
 	g++ -O3 -c -ansi -I"/usr/include/ImageMagick" `pkg-config --cflags gtkmm-2.4 libxml++-2.6` trackwindow.cpp
 
 clean:
-	rm colorrenderrer.o connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapgenerator.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settingswindow.o timewindow.o trackwidget.o trackwindow.o
+	rm colorrenderrer.o connector.o datalogdecode.o datalogger.o dayview.o downloadwindow.o functions.o httpclient.o lowlevel.o main.o mainwindow.o mapgenerator.o mapwidget.o photowidget.o photowindow.o picasaexport.o picasawindows.o settings.o settingswindow.o timewindow.o trackwidget.o trackwindow.o
 	rm gpslogger

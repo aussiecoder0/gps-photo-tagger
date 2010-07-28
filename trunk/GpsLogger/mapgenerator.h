@@ -36,6 +36,7 @@
 #include <mapnik/map.hpp>
 #include <cairomm/surface.h>
 #include "functions.h"
+#include "settings.h"
 
 using namespace std;
 
@@ -65,6 +66,7 @@ private:
     // Static entrypoints
     static void* entryPoint ( void* );
     // Variables & Objects
+    SettingsSection *config;
     Frame frame;
     Cairo::RefPtr<Cairo::ImageSurface> image;
     bool valid;

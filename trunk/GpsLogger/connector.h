@@ -26,6 +26,7 @@
 #include "datalogdecode.h"
 #include "datalogger.h"
 #include "lowlevel.h"
+#include "settings.h"
 
 using namespace std;
 
@@ -70,6 +71,7 @@ private:
     void start();
     LogEntry* download();
     // Variables & Objects
+    SettingsSection *config;
     bool run, clear, write, read;
     LogEntry* first;
     skytraq_config *info;
