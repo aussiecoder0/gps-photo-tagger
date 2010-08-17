@@ -9,7 +9,7 @@
  `svn checkout http://gps-photo-tagger.googlecode.com/svn/trunk/GpsLogger GpsLogger`
 
 === Requirements ===
- Application is compiled by g++ compiler using included makefile. Application also uses few libraries which are needed for run and their development packages are required for compilation. Used libraries are gtkmm-2.4, exiv2, curl4, xml++-2.6 and magick++9.
+ Application is compiled by g++ compiler using included makefile. Application also uses few libraries which are needed for run and their development packages are required for compilation. Used libraries are gtkmm-2.4, exiv2, curl4, xml++-2.6, magick++9 and mapnik.
 
 === Recommended packages for Ubuntu ===
  * subversion
@@ -21,11 +21,11 @@
  * libcurl4-openssl-dev
  * libxml++2.6-dev
  * libmagick++9-dev
+ * libmapnik0.7
 
- `sudo apt-get install subversion make astyle g++ libgtkmm-2.4-dev libexiv2-dev libcurl4-openssl-dev libxml++2.6-dev libmagick++9-dev`
+ `sudo apt-get install subversion make astyle g++ libgtkmm-2.4-dev libexiv2-dev libcurl4-openssl-dev libxml++2.6-dev libmagick++9-dev libmapnik-dev`
 
 === Make options ===
  * *all* - compile whole project
  * *clean* - delete binary files
  * *format* - format source files
-
