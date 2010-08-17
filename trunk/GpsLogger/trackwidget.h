@@ -23,6 +23,7 @@
 #define TRACKWIDGET_H_
 
 #include <cstdlib>
+#include <limits>
 #include <gtkmm-2.4/gtkmm.h>
 #include "colorrenderrer.h"
 #include "connector.h"
