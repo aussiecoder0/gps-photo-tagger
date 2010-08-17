@@ -132,6 +132,9 @@ void TrackWidget::relocateAll() {
         Gtk::TreeModel::Row row = *iter;
         long time = row[modelColumns.time2];
         int counter = 0;
+        double lastLat = numeric_limits<double>::quiet_NaN();
+        double lastLon = numeric_limits<double>::quiet_NaN();
+        double length = 0;
         LogEntry* next = row[modelColumns.firstEntry];
         while ( next != NULL ) {
             int relative = difftime ( next->time, time );
@@ -139,9 +142,17 @@ void TrackWidget::relocateAll() {
                 break;
             }
             counter++;
+            if ( isnan ( lastLat ) == false ) {
+                length += distance ( lastLat, lastLon, next->latitude, next->longitude );
+            }
+            if ( next != NULL ) {
+                lastLat = next->latitude;
+                lastLon = next->longitude;
+            }
             next = next->next;
         }
         row[modelColumns.count] = counter;
+        row[modelColumns.length] = length;
     }
     change();
 }

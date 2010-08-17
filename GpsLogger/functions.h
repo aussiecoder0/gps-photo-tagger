@@ -33,6 +33,7 @@ using namespace std;
 
 string itos ( int );
 string dtos ( double );
+double distance ( double, double, double, double );
 string coordinate ( bool, double );
 string extractFileName ( string );
 void errorMsg ( string );

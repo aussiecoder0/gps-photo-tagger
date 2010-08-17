@@ -33,6 +33,13 @@ string dtos ( double number ) {
     return out.str();
 }
 
+double distance ( double lat1, double lon1, double lat2, double lon2 ) {
+    double koef = 6378137 * M_PI / 180;
+    double dLat = ( lat2 - lat1 ) * koef;
+    double dLon = ( lon2 - lon1 ) * cos ( lat1 * M_PI / 180 ) * koef;
+    return sqrt ( pow ( dLat, 2 ) + pow ( dLon, 2 ) );
+}
+
 string coordinate ( bool isLon, double coordinate ) {
     stringstream out;
     int deg = abs ( coordinate );
