@@ -21,7 +21,7 @@
  * libcurl4-openssl-dev
  * libxml++2.6-dev
  * libmagick++9-dev
- * libmapnik0.7
+ * libmapnik-dev
 
  `sudo apt-get install subversion make astyle g++ libgtkmm-2.4-dev libexiv2-dev libcurl4-openssl-dev libxml++2.6-dev libmagick++9-dev libmapnik-dev`
 
