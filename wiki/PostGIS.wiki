@@ -15,7 +15,7 @@
 
 === Create database ===
 
- Now login as postgres user by command `sudo su - postgres` and run following commands:
+ Now login as _postgres_ user by command `sudo su - postgres` and run following commands:
 
  * `createdb -E UTF8 gis`
  * `createlang plpgsql gis`
