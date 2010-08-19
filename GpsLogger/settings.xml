@@ -4,6 +4,9 @@
     <value key="port" type="string">/dev/ttyUSB0</value>
   </section>
   <section name="postgis">
+    <value key="datasource" type="string">/usr/lib/mapnik/0.7/input/</value>
+    <value key="font" type="string">/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf</value>
+    <value key="usepostgis" type="boolean">true</value>
     <value key="host" type="string">127.0.0.1</value>
     <value key="port" type="int">5432</value>
     <value key="databese" type="string">gis</value>
