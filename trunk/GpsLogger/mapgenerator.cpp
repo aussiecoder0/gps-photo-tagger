@@ -23,11 +23,10 @@
 
 MapGenerator::MapGenerator() :
         projection ( "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +no_defs +over" ) {
-    // Globals
-    mapnik::datasource_cache::instance()->register_datasources ( "/usr/lib/mapnik/0.7/input/" );
-    mapnik::freetype_engine::register_font ( "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf" );
     // Variables & Objects
     config = Settings::getSection ( "postgis" );
+    mapnik::datasource_cache::instance()->register_datasources ( config->getString ( "datasource" ) );
+    mapnik::freetype_engine::register_font ( config->getString ( "font" ) );
     valid = false;
     width = 0;
     height = 0;
@@ -35,10 +34,12 @@ MapGenerator::MapGenerator() :
     longitude = 0;
     zoom = 1;
     load_map ( map, "styles.xml" );
-    addLayer ( map, "polygon" );
-    addLayer ( map, "line" );
-    addLayer ( map, "roads" );
-    addLayer ( map, "point" );
+    if ( config->getBool ( "usepostgis" ) ) {
+        addLayer ( map, "polygon" );
+        addLayer ( map, "line" );
+        addLayer ( map, "roads" );
+        addLayer ( map, "point" );
+    }
     run = true;
     correct = true;
     counter = 0;
