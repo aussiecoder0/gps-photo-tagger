@@ -18,7 +18,7 @@
 || device || port || string || path to serial port with device ||
 || postgis || datasource || string || path to datasource directory, where file `postgis.input` is placed ||
 || || font || string || path to font file, this font is used in map ||
-|| || usepostgis || boolean || define if PostGIS serve is used and map is rendered ||
+|| || usepostgis || bool || define if PostGIS serve is used and map is rendered ||
 || || host || string || Postgres server hostname ||
 || || port || int || Postgres server port number ||
 || || database || string || PostGIS database name ||
